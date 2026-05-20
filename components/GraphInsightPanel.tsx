@@ -14,15 +14,15 @@ interface GraphInsightPanelProps {
 }
 
 const baseColors: Record<GraphResponse["nodes"][number]["type"], string> = {
-  skin: "#4cc9f0",
-  instance: "#06b6d4",
-  trader: "#9ca3af",
-  transaction: "#f4f7fb",
-  marketplace: "#b388ff",
-  weapon: "#ff9f1c",
-  sticker: "#ff5c7a",
-  collection: "#6ee7b7",
-  price: "#9aa6b8",
+  skin: "#c95a62",
+  instance: "#ef2a2a",
+  trader: "#d9d6d3",
+  transaction: "#f2ece8",
+  marketplace: "#8c434a",
+  weapon: "#d9d6d3",
+  sticker: "#c95a62",
+  collection: "#3a090d",
+  price: "#8c434a",
 };
 
 const nodeShapes: Record<GraphResponse["nodes"][number]["type"], string> = {
@@ -50,9 +50,9 @@ const nodeSizes: Record<GraphResponse["nodes"][number]["type"], number> = {
 };
 
 function riskColor(riskScore: number): string {
-  if (riskScore >= 80) return "#ef4444";
-  if (riskScore >= 60) return "#f97316";
-  if (riskScore >= 40) return "#f59e0b";
+  if (riskScore >= 80) return "#ef2a2a";
+  if (riskScore >= 60) return "#c95a62";
+  if (riskScore >= 40) return "#8c434a";
   return baseColors.instance;
 }
 
@@ -129,12 +129,12 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
           selector: "node",
           style: {
             "background-color": "data(color)",
-            "border-color": "rgba(255,255,255,0.6)",
+            "border-color": "rgba(242,236,232,0.55)",
             "border-width": 1,
-            color: "#f4f7fb",
+            color: "#f2ece8",
             label: "data(label)",
             "font-size": 10,
-            "text-outline-color": "#080a0f",
+            "text-outline-color": "#050608",
             "text-outline-width": 3,
           },
         },
@@ -143,11 +143,11 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
           selector: "edge",
           style: {
             "curve-style": "bezier",
-            "line-color": isRiskMode ? "rgba(239,68,68,0.5)" : "rgba(76,201,240,0.5)",
-            "target-arrow-color": isRiskMode ? "rgba(239,68,68,0.5)" : "rgba(76,201,240,0.5)",
+            "line-color": isRiskMode ? "rgba(239,42,42,0.58)" : "rgba(201,90,98,0.58)",
+            "target-arrow-color": isRiskMode ? "rgba(239,42,42,0.58)" : "rgba(201,90,98,0.58)",
             "target-arrow-shape": "triangle",
             label: "data(label)",
-            color: "#9aa6b8",
+            color: "#8c434a",
             "font-size": 8,
             "text-rotation": "autorotate",
           },

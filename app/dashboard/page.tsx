@@ -4,8 +4,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowDown, Globe2, Radar, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { CommandRadar } from "@/components/CommandRadar";
 import { CompareWorkspace } from "@/components/CompareWorkspace";
 import { GraphInsightPanel } from "@/components/GraphInsightPanel";
 import { MarketPulseCards } from "@/components/MarketPulseCards";
@@ -165,26 +165,99 @@ export default function DashboardPage() {
       )}
 
       {activeWorkspace === "market-radar" && (
-        <section className="workspace">
-          <OpportunityFeed
-            selectedId={selectedOpportunity?.id}
+        <section className="dashboard-grid">
+          <CommandRadar
             filters={filters}
-            onSelect={handleSelectOpportunity}
-            onOpenGraph={handleOpenOpportunityGraph}
-            onCompare={handleCompareOpportunity}
-            onSignalChange={(signal: SignalFilter) => updateFilters({ signal })}
+            scan={scan}
+            scanStatus={scanStatus}
+            onRunScan={handleRunScan}
+            onOpenBestOpportunity={handleOpenBestOpportunity}
+            onOpenRiskCycles={() => setActiveWorkspace("risk-cycles")}
           />
-          <div className="right-stack">
-            <section className="panel graph-panel">
-              <div className="panel-header">
-                <div>
-                  <h2>Graph Insight</h2>
-                  <p>{graphTarget ? graphTarget.label : "Open a graph from any opportunity."}</p>
+
+          <aside className="metric-rail">
+            <section className="intel-module">
+              <div className="rail-header">
+                <span>Telemetry</span>
+                <strong>Live market pulse</strong>
+              </div>
+              <MarketPulseCards />
+            </section>
+            <section className="intel-module ops-module">
+              <div className="rail-header">
+                <span>Operations</span>
+                <strong>Scan Status</strong>
+              </div>
+              <div className="ops-status-grid">
+                <div className="status-row">
+                  <span>Engine</span>
+                  <strong>{scanStatus === "running" ? "Scanning" : scanStatus === "error" ? "Attention" : "Online"}</strong>
+                </div>
+                <div className="status-row">
+                  <span>Last execution</span>
+                  <strong>{scan?.completedAt ? new Date(scan.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Awaiting scan"}</strong>
+                </div>
+                <div className="status-row">
+                  <span>Markets active</span>
+                  <strong>{filters.marketplaces.length}</strong>
+                </div>
+                <div className="status-row">
+                  <span>Opportunities</span>
+                  <strong>{scan?.opportunitiesFound ?? 0}</strong>
+                </div>
+                <div className="status-row">
+                  <span>Risk cycles</span>
+                  <strong>{scan?.riskCyclesFound ?? 0}</strong>
                 </div>
               </div>
-              <GraphInsightPanel graphTarget={graphTarget} />
+              <div className="ops-mini-log">
+                <p><span /> Engine handshake complete</p>
+                <p><span /> Marketplace filters synchronized</p>
+                <p><span /> {scan ? "Latest scan indexed" : "Awaiting first scan"}</p>
+                <p><span /> Risk loop monitor armed</p>
+              </div>
             </section>
+          </aside>
+
+          <div className="feed-zone">
+            <OpportunityFeed
+              selectedId={selectedOpportunity?.id}
+              filters={filters}
+              onSelect={handleSelectOpportunity}
+              onOpenGraph={handleOpenOpportunityGraph}
+              onCompare={handleCompareOpportunity}
+              onSignalChange={(signal: SignalFilter) => updateFilters({ signal })}
+            />
           </div>
+
+          <section className="panel risk-zone">
+            <div className="panel-header">
+              <div>
+                <h2>Risk Loops</h2>
+                <p>Suspicious circular routes and abnormal transfer paths.</p>
+              </div>
+            </div>
+            <div className="compact-panel-body">
+              <RiskCyclesPanel
+                selectedId={selectedRiskCycle?.id}
+                filters={filters}
+                onSelect={handleSelectRiskCycle}
+              />
+            </div>
+          </section>
+
+          <section className="intel-module recent-zone activity-ledger">
+            <div className="rail-header">
+              <span>Activity</span>
+              <strong>Recent Activity</strong>
+            </div>
+            <div className="ledger-lines">
+              <p><span className="ledger-dot red-soft" /> <span>Graph engine ready</span></p>
+              <p><span className="ledger-dot red" /> <span>{scan ? `${scan.riskCyclesFound} suspicious cycles indexed` : "Awaiting scan"}</span></p>
+              <p><span className="ledger-dot cream" /> <span>Spread window {filters.minSpreadPct}% minimum</span></p>
+              <p><span className="ledger-dot slate" /> <span>{filters.marketplaces.join(" / ")} monitored</span></p>
+            </div>
+          </section>
         </section>
       )}
 
@@ -263,40 +336,35 @@ export default function DashboardPage() {
       onRunScan={handleRunScan}
       onSearch={(query) => updateFilters({ query })}
     >
-      <section className="hero-strip">
+      <section className="ops-status-band">
         <motion.div
-          className="hero-panel"
+          className="engine-strip"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         >
-          <span className="eyebrow">
-            <Radar size={15} /> NEO4J ENGINE ONLINE - {filters.marketplaces.length} MARKETS MONITORED
-          </span>
-          <h1>Uncover hidden market routes before competition.</h1>
-          <p className="hero-copy">
-            Neo4j powers real-time detection of trader networks, price anomalies, suspicious cycles, sticker premiums and tactical arbitrage routes.
-          </p>
-          <div className="hero-actions">
-            <button className="primary-action" onClick={handleOpenBestOpportunity}>Initiate Global Scan <Globe2 size={16} /></button>
-            <button className="ghost-action" onClick={() => setActiveWorkspace("risk-cycles")}>View Intelligence <ArrowDown size={16} /></button>
-            <button className="ghost-action" onClick={() => setActiveWorkspace("compare")}>Compare Markets <ShieldCheck size={16} /></button>
+          <div className="engine-cell primary">
+            <span>Neo4j engine</span>
+            <strong>{scanStatus === "running" ? "Scanning" : scanStatus === "error" ? "Attention" : "Online"}</strong>
           </div>
-          <div className="tactical-orbit" aria-hidden="true">
-            <span />
-            <span />
-            <span />
+          <div className="engine-cell">
+            <span>Markets monitored</span>
+            <strong>{filters.marketplaces.length}</strong>
           </div>
-        </motion.div>
-
-        <motion.div
-          className="market-pulse"
-          aria-label="Market pulse"
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: "easeOut", delay: 0.08 }}
-        >
-          <MarketPulseCards />
+          <div className="engine-cell">
+            <span>Signals detected</span>
+            <strong>{scan ? scan.opportunitiesFound + scan.riskCyclesFound : "Awaiting scan"}</strong>
+          </div>
+          <div className="engine-cell">
+            <span>Last update</span>
+            <strong>{scan?.completedAt ? new Date(scan.completedAt).toLocaleString() : "No run recorded"}</strong>
+          </div>
+          <div className="engine-actions">
+            <button className="terminal-action primary" onClick={handleRunScan} disabled={scanStatus === "running"}>
+              {scanStatus === "running" ? "Scanning" : "Execute scan"}
+            </button>
+            <button className="terminal-action" onClick={() => setActiveWorkspace("graph-explorer")}>Open graph</button>
+          </div>
         </motion.div>
       </section>
 
