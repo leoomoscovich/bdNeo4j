@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./home.css";
 
 :root {
   --bg: #06080d;
@@ -29,6 +30,25 @@
   --shadow: 0 28px 90px rgba(0, 0, 0, 0.5);
   --shadow-soft: 0 14px 45px rgba(0, 0, 0, 0.28);
   --glass: linear-gradient(180deg, rgba(16, 22, 34, 0.86), rgba(8, 12, 20, 0.72));
+
+  /* Home page design tokens */
+  --paper: #F7F5F0;
+  --paper-2: #FFFFFF;
+  --ink: #0B0B0C;
+  --ink-2: #1A1A1B;
+  --home-muted: #6B6B6B;
+  --home-muted-2: #97948C;
+  --hair: #E5E2DA;
+  --hair-2: #D9D5C9;
+  --home-red: #EE2E2E;
+  --home-red-dark: #C71B1B;
+  --home-red-soft: rgba(238, 46, 46, 0.08);
+  --inv-bg: #0B0B0C;
+  --inv-fg: #F7F5F0;
+  --inv-hair: rgba(247, 245, 240, 0.14);
+  --inv-muted: rgba(247, 245, 240, 0.55);
+  --maxw: 1320px;
+  --pad: clamp(20px, 4vw, 64px);
 }
 
 * {

@@ -30,9 +30,30 @@ yarn-error.log*
 .DS_Store
 .env
 
-# Animation frames (720MB — add manually per environment)
+# Animation frames (large binary sequences — add manually per environment)
 /public/animation/
+/public/sequence/
 /pictures/
+
+# Build artifacts
+tsconfig.tsbuildinfo
+
+# Claude internal
+.claude/
+
+# Design/planning docs (not code)
+ANIMATION_ASSEMBLY_PLAN.md
+ANIMATION_PROMPT_AK47.md
+ANIMATION_PROMPT_AK47_PHASE1_DESARMADA.md
+ANIMATION_PROMPT_AK47_PHASE2_ARMADA.md
+CLAUDE_DESIGN_PROMPT.md
+SKINGRAPH_DESIGN_SYSTEM.md
+SKINGRAPH_DESIGN_TOKENS.css
+SKINGRAPH_IMPLEMENTATION_QUICK_REF.md
+VIDEO_ANIMATION_PROMPT.md
+color-preview.html
+cs2-neo4j-mockup.html
+skin-graph-radar-mockup.html
 
 # IDE
 .vscode/
