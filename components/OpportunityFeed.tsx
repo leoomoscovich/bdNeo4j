@@ -144,13 +144,13 @@ export function OpportunityFeed({
     <div className="table-panel">
       <div className="panel-header">
         <div>
-          <h2>Opportunity Feed</h2>
-          <p>Ranked by spread, confidence, liquidity and trader path quality.</p>
+          <h2>Oportunidades de mercado</h2>
+          <p>Ordenadas por spread, confianza y calidad del camino de traders.</p>
         </div>
         <div className="mini-tabs">
-          <button className={filters.signal === "ALL" ? "active" : ""} onClick={() => onSignalChange("ALL")}>Best</button>
-          <button className={filters.signal === "LOW_FLOAT_PREMIUM" ? "active" : ""} onClick={() => onSignalChange("LOW_FLOAT_PREMIUM")}>Low float</button>
-          <button className={filters.signal === "STICKER_PREMIUM" ? "active" : ""} onClick={() => onSignalChange("STICKER_PREMIUM")}>Sticker premium</button>
+          <button className={filters.signal === "ALL" ? "active" : ""} onClick={() => onSignalChange("ALL")}>Todas</button>
+          <button className={filters.signal === "LOW_FLOAT_PREMIUM" ? "active" : ""} onClick={() => onSignalChange("LOW_FLOAT_PREMIUM")}>Float bajo</button>
+          <button className={filters.signal === "STICKER_PREMIUM" ? "active" : ""} onClick={() => onSignalChange("STICKER_PREMIUM")}>Sticker</button>
           <button className={filters.signal === "FAST_FLIP" ? "active" : ""} onClick={() => onSignalChange("FAST_FLIP")}>Fast flip</button>
         </div>
       </div>
@@ -160,14 +160,14 @@ export function OpportunityFeed({
           <thead>
             <tr>
               <th>Skin</th>
-              <th>Wear / Float</th>
+              <th>Desgaste / Float</th>
               <th>Marketplace</th>
-              <th>Ask (USD)</th>
-              <th>Fair Value (USD)</th>
+              <th>Precio</th>
+              <th>Valor justo</th>
               <th>Spread</th>
-              <th>Signal</th>
-              <th>Confidence</th>
-              <th>Actions</th>
+              <th>Señal</th>
+              <th>Confianza</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -188,7 +188,14 @@ export function OpportunityFeed({
                   }}
                 >
                   <td className="opp-skin">
-                    <span className="opp-skin-name">{opp.skinName}</span>
+                    <a
+                      href={`/skins/${opp.skinId}`}
+                      className="opp-skin-name opp-skin-link"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Ver detalle en catálogo"
+                    >
+                      {opp.skinName}
+                    </a>
                   </td>
                   <td className="opp-wear">
                     <span className="opp-wear-abbr">{opp.wear}</span>
@@ -215,8 +222,15 @@ export function OpportunityFeed({
                     <span className="confidence-value">{opp.confidenceScore}</span>
                   </td>
                   <td>
-                    <button className="ghost-action" onClick={(e) => { e.stopPropagation(); onOpenGraph(opp); }}>Graph</button>
-                    <button className="ghost-action" onClick={(e) => { e.stopPropagation(); onCompare(opp); }}>Compare</button>
+                    <a
+                      href={`/skins/${opp.skinId}`}
+                      className="ghost-action"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Ver →
+                    </a>
+                    <button className="ghost-action" onClick={(e) => { e.stopPropagation(); onOpenGraph(opp); }}>Grafo</button>
+                    <button className="ghost-action" onClick={(e) => { e.stopPropagation(); onCompare(opp); }}>Comparar</button>
                   </td>
                 </tr>
               );

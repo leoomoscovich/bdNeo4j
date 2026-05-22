@@ -1,5 +1,5 @@
 import neo4j, { type Node, type Record as Neo4jRecord } from "neo4j-driver";
-import type { CompareResponse, GraphEdge, GraphNode, GraphResponse, JsonValue, MarketPulse, MetricsResponse, NodeDetailsResponse, NodeType, Opportunity, RiskCycle, ScanSummary, SignalType, SkinSearchResult, TraderProfile, TraderSummary } from "./types";
+import type { CompareResponse, GraphEdge, GraphNode, GraphResponse, JsonValue, JourneyStep, MarketPulse, MetricsResponse, NodeDetailsResponse, NodeType, Opportunity, RiskCycle, ScanSummary, SignalType, SkinCatalogItem, SkinDetail, SkinDetailResponse, SkinSearchResult, TraderProfile, TraderReputation, TraderSummary } from "./types";
 
 const labelToType: Record<string, NodeType> = {
   Skin: "skin",
@@ -562,6 +562,92 @@ export function mapScan(records: Neo4jRecord[]): ScanSummary | null {
     opportunitiesFound: num(scan.properties.opportunitiesFound),
     riskCyclesFound: num(scan.properties.riskCyclesFound),
     marketplacesScanned: stringList(scan.properties.marketplacesScanned),
+  };
+}
+
+export function mapSkinCatalog(records: Neo4jRecord[]): SkinCatalogItem[] {
+  return records.map((r) => ({
+    id: str(r.get("id")),
+    name: str(r.get("name")),
+    weapon: str(r.get("weapon")),
+    collection: str(r.get("collection") ?? ""),
+    rarity: str(r.get("rarity")),
+    imageUrl: str(r.get("imageUrl") ?? ""),
+    instanceCount: num(r.get("instanceCount")),
+    latestPrice: r.get("latestPrice") != null ? num(r.get("latestPrice")) : null,
+    latestMarketplace: r.get("latestMarketplace") ? str(r.get("latestMarketplace")) : null,
+  }));
+}
+
+export function mapSkinDetail(records: Neo4jRecord[]): SkinDetailResponse | null {
+  const record = records[0];
+  if (!record) return null;
+
+  const skin = record.get("s") as Node;
+  const weapon = record.get("w") as Node | null;
+  const collection = record.get("c") as Node | null;
+  const rawInstances = (record.get("instances") as Array<Record<string, unknown>>) ?? [];
+
+  const instances = rawInstances.filter((i) => i.id).map((i) => ({
+    id: str(i.id),
+    floatValue: num(i.floatValue),
+    wear: str(i.wear),
+    serial: str(i.serial),
+    txHistory: (Array.isArray(i.txHistory) ? i.txHistory : [])
+      .filter((t: Record<string, unknown>) => t.priceUsd != null)
+      .map((t: Record<string, unknown>) => ({
+        priceUsd: num(t.priceUsd),
+        marketplace: str(t.marketplace ?? ""),
+        timestamp: str(t.timestamp ?? ""),
+        sellerId: str(t.sellerId ?? ""),
+        sellerName: str(t.sellerName ?? ""),
+      })),
+  }));
+
+  const skinDetail: SkinDetail = {
+    id: str(skin.properties.id),
+    name: str(skin.properties.name),
+    weapon: weapon ? str(weapon.properties.name) : "",
+    collection: collection ? str(collection.properties.name) : "",
+    rarity: str(skin.properties.rarity),
+    imageUrl: str(skin.properties.imageUrl ?? ""),
+    instances,
+  };
+
+  return { skin: skinDetail, journey: [], currentSeller: null };
+}
+
+export function mapInstanceJourney(records: Neo4jRecord[]): JourneyStep[] {
+  return records.map((r) => ({
+    txId: str(r.get("txId")),
+    priceUsd: num(r.get("priceUsd")),
+    timestamp: str(r.get("timestamp")),
+    marketplace: str(r.get("marketplace") ?? ""),
+    seller: {
+      id: str(r.get("sellerId")),
+      name: str(r.get("sellerName")),
+      reputation: num(r.get("sellerRep")),
+      riskScore: num(r.get("sellerRisk")),
+    },
+    buyer: r.get("buyerId") ? { id: str(r.get("buyerId")), name: str(r.get("buyerName")) } : null,
+  }));
+}
+
+export function mapTraderReputation(records: Neo4jRecord[]): TraderReputation | null {
+  const r = records[0];
+  if (!r) return null;
+
+  const label = str(r.get("reputationLabel"));
+  return {
+    id: str(r.get("id")),
+    name: str(r.get("name")),
+    reputation: num(r.get("reputation")),
+    riskScore: num(r.get("riskScore")),
+    country: str(r.get("country")),
+    txCount: num(r.get("txCount")),
+    volumeUsd: Math.round(num(r.get("volumeUsd")) * 100) / 100,
+    avgPeerReputation: num(r.get("avgPeerReputation")),
+    reputationLabel: (label === "trusted" || label === "suspicious" ? label : "neutral") as TraderReputation["reputationLabel"],
   };
 }
 

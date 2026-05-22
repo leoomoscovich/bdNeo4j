@@ -21,12 +21,12 @@ function formatUsd(value: number) {
   }).format(value);
 }
 
-function formatPct(value: number) {
-  return `${value.toFixed(1)}%`;
+function formatPct(value: number | null | undefined) {
+  return `${(value ?? 0).toFixed(1)}%`;
 }
 
-function formatNumber(value: number) {
-  return Intl.NumberFormat("en").format(value);
+function formatNumber(value: number | null | undefined) {
+  return Intl.NumberFormat("en").format(value ?? 0);
 }
 
 type MetricCardProps = {
@@ -81,8 +81,8 @@ export function MarketPulseCards() {
         if (!response.ok) throw new Error("market-pulse");
         return response.json();
       })
-      .then((data) => {
-        setPulse(data);
+      .then((data: Partial<MarketPulse>) => {
+        setPulse({ ...fallbackPulse, ...data });
         setLoading(false);
       })
       .catch(() => {
@@ -105,11 +105,11 @@ export function MarketPulseCards() {
 
   return (
     <div className="pulse-grid" aria-label="Pulso de mercado">
-      <MetricCard label="Routed volume" value={formatUsd(pulse.trackedVolumeUsd)} accent="soft" detail="Cross-market flow" icon={<CircleDollarSign size={18} />} />
-      <MetricCard label="Route hits" value={formatNumber(pulse.dealsDetected)} accent="cream" detail="Qualified signals" icon={<TrendingUp size={18} />} />
-      <MetricCard label="Spread window" value={formatPct(pulse.averageSpreadPct)} accent="burgundy" detail="Mean arbitrage" icon={<Activity size={18} />} />
-      <MetricCard label="Suspicious cycles" value={formatNumber(pulse.suspiciousCycles)} accent={pulse.suspiciousCycles > 0 ? "red" : "soft"} detail="Loop exposure" icon={<AlertTriangle size={18} />} />
-      <MetricCard label="Trader nodes" value={formatNumber(pulse.activeTraders)} accent="soft" detail="Graph entities" icon={pulse.activeTraders > 0 ? <Users size={18} /> : <RadioTower size={18} />} />
+      <MetricCard label="Volumen registrado" value={formatUsd(pulse.trackedVolumeUsd)} accent="soft" detail="Flujo entre marketplaces" icon={<CircleDollarSign size={18} />} />
+      <MetricCard label="Oportunidades" value={formatNumber(pulse.dealsDetected)} accent="cream" detail="Señales calificadas" icon={<TrendingUp size={18} />} />
+      <MetricCard label="Spread promedio" value={formatPct(pulse.averageSpreadPct)} accent="burgundy" detail="Margen medio detectado" icon={<Activity size={18} />} />
+      <MetricCard label="Ciclos sospechosos" value={formatNumber(pulse.suspiciousCycles)} accent={pulse.suspiciousCycles > 0 ? "red" : "soft"} detail="Rutas circulares" icon={<AlertTriangle size={18} />} />
+      <MetricCard label="Traders en grafo" value={formatNumber(pulse.activeTraders)} accent="soft" detail="Nodos Neo4j activos" icon={pulse.activeTraders > 0 ? <Users size={18} /> : <RadioTower size={18} />} />
     </div>
   );
 }

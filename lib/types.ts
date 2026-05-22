@@ -140,6 +140,69 @@ export type ScanSummary = {
   marketplacesScanned: string[];
 };
 
+export type SkinCatalogItem = {
+  id: string;
+  name: string;
+  weapon: string;
+  collection: string;
+  rarity: string;
+  imageUrl: string;
+  instanceCount: number;
+  latestPrice: number | null;
+  latestMarketplace: string | null;
+};
+
+export type InstanceSummary = {
+  id: string;
+  floatValue: number;
+  wear: string;
+  serial: string;
+  txHistory: Array<{
+    priceUsd: number;
+    marketplace: string;
+    timestamp: string;
+    sellerId: string;
+    sellerName: string;
+  }>;
+};
+
+export type SkinDetail = {
+  id: string;
+  name: string;
+  weapon: string;
+  collection: string;
+  rarity: string;
+  imageUrl: string;
+  instances: InstanceSummary[];
+};
+
+export type JourneyStep = {
+  txId: string;
+  priceUsd: number;
+  timestamp: string;
+  marketplace: string;
+  seller: { id: string; name: string; reputation: number; riskScore: number };
+  buyer: { id: string; name: string } | null;
+};
+
+export type TraderReputation = {
+  id: string;
+  name: string;
+  reputation: number;
+  riskScore: number;
+  country: string;
+  txCount: number;
+  volumeUsd: number;
+  avgPeerReputation: number;
+  reputationLabel: "trusted" | "neutral" | "suspicious";
+};
+
+export type SkinDetailResponse = {
+  skin: SkinDetail;
+  journey: JourneyStep[];
+  currentSeller: TraderReputation | null;
+};
+
 export type CompareItem = {
   id: string;
   label: string;

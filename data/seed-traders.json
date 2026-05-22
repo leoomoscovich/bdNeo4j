@@ -1,0 +1,12 @@
+[
+  { "id": "trader-north-aim", "name": "north_aim", "country": "DK", "reputation": 94 },
+  { "id": "trader-float-hunter", "name": "float_hunter", "country": "AR", "reputation": 88 },
+  { "id": "trader-kato-whale", "name": "kato_whale", "country": "DE", "reputation": 97 },
+  { "id": "trader-fast-flip", "name": "fast_flip", "country": "US", "reputation": 72 },
+  { "id": "trader-collector-zero", "name": "collector_zero", "country": "BR", "reputation": 91 },
+  { "id": "trader-market-maker", "name": "market_maker", "country": "SE", "reputation": 84 },
+  { "id": "trader-shadow-a", "name": "shadow_a", "country": "NL", "reputation": 35 },
+  { "id": "trader-shadow-b", "name": "shadow_b", "country": "NL", "reputation": 31 },
+  { "id": "trader-shadow-c", "name": "shadow_c", "country": "NL", "reputation": 29 },
+  { "id": "trader-steady", "name": "steady_inventory", "country": "CA", "reputation": 79 }
+]

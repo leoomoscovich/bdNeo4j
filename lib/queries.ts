@@ -188,6 +188,83 @@ WHERE size(traders) >= 2 AND size(txs) >= 2
 RETURN count(*) AS suspiciousCycles
 `;
 
+export const allSkinsQuery = `
+MATCH (s:Skin)-[:FOR_WEAPON]->(w:Weapon)
+OPTIONAL MATCH (s)-[:BELONGS_TO]->(c:Collection)
+OPTIONAL MATCH (i:SkinInstance)-[:INSTANCE_OF]->(s)
+OPTIONAL MATCH (i)<-[:FOR_INSTANCE]-(tx:Transaction)-[:ON_MARKETPLACE]->(mp:Marketplace)
+WITH s, w, c, i, tx, mp
+ORDER BY tx.timestamp DESC
+WITH s, w, c,
+  collect(DISTINCT i) AS instances,
+  collect(DISTINCT {priceUsd: tx.priceUsd, marketplace: mp.name, timestamp: toString(tx.timestamp)})[0] AS latestTx
+WHERE ($query = '' OR toLower(s.name) CONTAINS toLower($query))
+  AND ($rarity = '' OR s.rarity = $rarity)
+  AND ($weapon = '' OR w.name = $weapon)
+RETURN s.id AS id, s.name AS name, w.name AS weapon, c.name AS collection,
+  s.rarity AS rarity, s.imageUrl AS imageUrl,
+  size(instances) AS instanceCount,
+  latestTx.priceUsd AS latestPrice,
+  latestTx.marketplace AS latestMarketplace
+ORDER BY latestTx.priceUsd DESC
+SKIP $skip
+LIMIT $limit
+`;
+
+export const skinDetailQuery = `
+MATCH (s:Skin {id: $skinId})-[:FOR_WEAPON]->(w:Weapon)
+OPTIONAL MATCH (s)-[:BELONGS_TO]->(c:Collection)
+OPTIONAL MATCH (i:SkinInstance)-[:INSTANCE_OF]->(s)
+OPTIONAL MATCH (i)<-[:FOR_INSTANCE]-(tx:Transaction)-[:ON_MARKETPLACE]->(mp:Marketplace)
+OPTIONAL MATCH (seller:Trader)-[:SOLD]->(tx)
+WITH s, w, c, i,
+  collect({
+    priceUsd: tx.priceUsd,
+    marketplace: mp.name,
+    timestamp: toString(tx.timestamp),
+    sellerId: seller.id,
+    sellerName: seller.name
+  }) AS txHistory
+ORDER BY i.floatValue ASC
+RETURN s, w, c,
+  collect({
+    id: i.id,
+    floatValue: i.floatValue,
+    wear: i.wear,
+    serial: i.serial,
+    txHistory: txHistory
+  }) AS instances
+`;
+
+export const instanceJourneyQuery = `
+MATCH (i:SkinInstance {id: $instanceId})<-[:FOR_INSTANCE]-(tx:Transaction)
+MATCH (seller:Trader)-[:SOLD]->(tx)
+OPTIONAL MATCH (tx)<-[:BOUGHT]-(buyer:Trader)
+OPTIONAL MATCH (tx)-[:ON_MARKETPLACE]->(mp:Marketplace)
+RETURN tx.id AS txId, tx.priceUsd AS priceUsd, toString(tx.timestamp) AS timestamp,
+  seller.id AS sellerId, seller.name AS sellerName, seller.reputation AS sellerRep, seller.riskScore AS sellerRisk,
+  buyer.id AS buyerId, buyer.name AS buyerName,
+  mp.name AS marketplace
+ORDER BY tx.timestamp ASC
+`;
+
+export const traderReputationQuery = `
+MATCH (t:Trader {id: $traderId})
+OPTIONAL MATCH (t)-[:SOLD|BOUGHT]->(tx:Transaction)
+WITH t, count(DISTINCT tx) AS txCount, sum(tx.priceUsd) AS volumeUsd
+OPTIONAL MATCH (t)-[:CONNECTED_TO]-(peer:Trader)
+WITH t, txCount, volumeUsd, collect(peer.reputation) AS peerReps
+RETURN t.id AS id, t.name AS name, t.reputation AS reputation,
+  t.riskScore AS riskScore, t.country AS country,
+  txCount, coalesce(volumeUsd, 0.0) AS volumeUsd,
+  CASE WHEN size(peerReps) > 0 THEN reduce(s = 0.0, r IN peerReps | s + r) / size(peerReps) ELSE t.reputation END AS avgPeerReputation,
+  CASE
+    WHEN t.reputation >= 0.75 AND txCount >= 5 THEN 'trusted'
+    WHEN t.reputation <= 0.4 OR txCount < 3 THEN 'suspicious'
+    ELSE 'neutral'
+  END AS reputationLabel
+`;
+
 export function nodeDetailsQuery(type: NodeType) {
   return `
   MATCH (n:${nodeLabels[type]} {id: $id})

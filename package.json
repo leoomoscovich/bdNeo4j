@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "seed": "tsx scripts/seed-neo4j.ts"
+    "seed": "tsx scripts/seed-neo4j.ts",
+    "ingest": "tsx scripts/ingest-csfloat.ts",
+    "enrich": "tsx scripts/enrich-steam.ts",
+    "import-all": "tsx scripts/import-all-skins.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

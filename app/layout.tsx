@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" data-theme="dark" suppressHydrationWarning>
-      <body className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
+      <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable} ${interTight.variable} ${jetbrainsMono.variable}`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem('skin-command-theme')==='light'?'light':'dark';document.documentElement.dataset.theme=t;document.documentElement.classList.add(t==='light'?'theme-light':'theme-dark');document.addEventListener('DOMContentLoaded',function(){document.body.dataset.theme=t;document.body.classList.add(t==='light'?'light-mode':'dark-mode')})}catch(e){document.documentElement.dataset.theme='dark';document.documentElement.classList.add('theme-dark')}`,

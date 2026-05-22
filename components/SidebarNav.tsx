@@ -1,6 +1,6 @@
 import type { ScanSummary } from "@/lib/types";
 import { marketplaceIds, type MarketplaceId, type WorkspaceId } from "@/lib/ui-state";
-import { Activity, BarChart3, DatabaseZap, Eye, GitBranch, LayoutDashboard, Radar, Scale, ShieldAlert, Star, Users } from "lucide-react";
+import { Activity, BarChart3, DatabaseZap, Eye, GitBranch, LayoutDashboard, Radar, Scale, ShieldAlert, Star, Users, Layers } from "lucide-react";
 import type { ComponentType } from "react";
 
 type SidebarNavItem = {
@@ -11,12 +11,11 @@ type SidebarNavItem = {
 };
 
 const navItems: SidebarNavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: "12" },
-  { id: "market-radar", label: "Market Radar", icon: BarChart3, badge: "live" },
-  { id: "risk-cycles", label: "Risk Cycles", icon: ShieldAlert, badge: "7" },
-  { id: "graph-explorer", label: "Graph Explorer", icon: GitBranch },
-  { id: "traders", label: "Traders", icon: Users, badge: "1.2k" },
-  { id: "watchlist", label: "Watchlist", icon: Star, badge: "local" },
+  { id: "market-radar", label: "Mercado", icon: BarChart3, badge: "live" },
+  { id: "risk-cycles", label: "Ciclos de riesgo", icon: ShieldAlert },
+  { id: "graph-explorer", label: "Explorador de grafo", icon: GitBranch },
+  { id: "traders", label: "Traders", icon: Users },
+  { id: "watchlist", label: "Seguimiento", icon: Star, badge: "local" },
 ];
 
 const marketplaceIcons: Record<MarketplaceId, ComponentType<{ size?: number; strokeWidth?: number }>> = {
@@ -53,6 +52,10 @@ export function SidebarNav({
           <span>Market intelligence</span>
         </div>
       </div>
+
+      <a href="/skins" className="nav-item" style={{ marginBottom: 4, textDecoration: "none" }}>
+        <span><Layers size={16} /> Catálogo de skins</span>
+      </a>
 
       <div className="nav-group">
         <div className="nav-label">Workspace</div>

@@ -130,7 +130,7 @@ export function RiskCyclesPanel({ selectedId, filters, onSelect }: RiskCyclesPan
               {cycle.traderPath.join(" \u2192 ")}
             </div>
 
-            {/* Value moved + time window */}
+            {/* Value moved + time window + link */}
             <div className="mt-2 flex items-center gap-4 text-[12px] text-[var(--muted)]">
               <span>
                 Movido: <span className="font-semibold text-[var(--soft)]">{formatUsd(cycle.valueMovedUsd)}</span>
@@ -138,6 +138,15 @@ export function RiskCyclesPanel({ selectedId, filters, onSelect }: RiskCyclesPan
               <span>
                 Ventana: <span className="font-semibold text-[var(--text)]">{cycle.timeWindowHours}h</span>
               </span>
+              {cycle.instanceId && (
+                <a
+                  href={`/skins/${cycle.instanceId.replace(/^inst-/, "").replace(/-\d+$/, "")}`}
+                  className="ml-auto text-[11px] font-mono text-[var(--soft)] hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Ver skin →
+                </a>
+              )}
             </div>
 
             {/* Evidence */}

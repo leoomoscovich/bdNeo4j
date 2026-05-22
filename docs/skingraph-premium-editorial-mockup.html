@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkinGraph Radar - Premium Editorial Mockup</title>
+  <style>
+    :root {
+      --bg: #090a0b;
+      --bg-2: #0d0f12;
+      --surface: rgba(18, 20, 23, 0.86);
+      --surface-2: rgba(255, 255, 255, 0.045);
+      --surface-3: rgba(255, 255, 255, 0.075);
+      --line: rgba(237, 232, 221, 0.12);
+      --line-strong: rgba(237, 232, 221, 0.22);
+      --text: #f2eee5;
+      --muted: #9c988f;
+      --faint: #625f59;
+      --cream: #efe6d1;
+      --sand: #c7a66a;
+      --olive: #9ca37a;
+      --mint: #88c6aa;
+      --risk: #d57464;
+      --blue: #8da6bf;
+      --shadow: 0 32px 90px rgba(0, 0, 0, 0.42);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 14% 8%, rgba(199, 166, 106, 0.14), transparent 34%),
+        radial-gradient(circle at 84% 12%, rgba(141, 166, 191, 0.10), transparent 30%),
+        linear-gradient(140deg, #08090a 0%, #101114 50%, #090a0b 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(239, 230, 209, 0.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(239, 230, 209, 0.026) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), transparent 78%);
+    }
+
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .mockup {
+      position: relative;
+      display: grid;
+      grid-template-columns: 256px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(9, 10, 11, 0.74);
+      backdrop-filter: blur(26px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(199, 166, 106, 0.42);
+      border-radius: 14px;
+      color: var(--sand);
+      background: linear-gradient(145deg, rgba(199, 166, 106, 0.16), rgba(255, 255, 255, 0.03));
+      font-weight: 900;
+      letter-spacing: -0.08em;
+    }
+
+    .brand strong,
+    .brand span { display: block; }
+    .brand strong { font-size: 14px; letter-spacing: -0.03em; }
+    .brand span { margin-top: 2px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
+
+    .nav-section { margin-top: 28px; }
+    .nav-label { margin: 0 0 10px 10px; color: var(--faint); font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      min-height: 42px;
+      margin: 4px 0;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .nav-item span:first-child { display: flex; align-items: center; gap: 10px; }
+    .nav-dot { width: 6px; height: 6px; border-radius: 99px; background: var(--faint); }
+    .nav-item small { color: var(--faint); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .nav-item.active { border-color: rgba(199, 166, 106, 0.28); color: var(--cream); background: rgba(199, 166, 106, 0.085); }
+    .nav-item.active .nav-dot { background: var(--sand); box-shadow: 0 0 18px rgba(199, 166, 106, 0.42); }
+
+    .scan-card {
+      margin-top: 34px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.024));
+    }
+
+    .scan-card strong { display: block; font-size: 13px; }
+    .scan-card p { margin: 8px 0 14px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .scan-card button {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid rgba(199, 166, 106, 0.34);
+      border-radius: 12px;
+      color: #17140e;
+      background: var(--sand);
+      font-weight: 850;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 24px 28px 44px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 52px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(18, 20, 23, 0.62);
+      backdrop-filter: blur(20px);
+    }
+
+    .search span { color: var(--faint); }
+    .search input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      background: transparent;
+    }
+
+    .top-actions { display: flex; gap: 10px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .pill.hot { border-color: rgba(136, 198, 170, 0.28); color: var(--mint); }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-copy { padding: 34px; }
+    .eyebrow { color: var(--sand); font-size: 11px; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; }
+
+    h1 {
+      max-width: 760px;
+      margin: 16px 0 16px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(52px, 6.4vw, 88px);
+      line-height: 0.88;
+      letter-spacing: -0.07em;
+    }
+
+    .hero-copy p {
+      max-width: 690px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    .hero-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .primary,
+    .secondary {
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 999px;
+      font-weight: 850;
+    }
+
+    .primary { border: 0; color: #17140e; background: var(--cream); }
+    .secondary { border: 1px solid var(--line); color: var(--cream); background: transparent; }
+
+    .briefing {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      padding: 18px;
+    }
+
+    .briefing-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 8px 16px;
+    }
+
+    .briefing-head strong { font-size: 13px; letter-spacing: -0.02em; }
+    .briefing-head span { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .metric {
+      min-height: 136px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--surface-2);
+    }
+
+    .metric small { display: block; color: var(--faint); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+    .metric strong { display: block; margin-top: 14px; font-family: Georgia, "Times New Roman", serif; font-size: 34px; font-weight: 500; letter-spacing: -0.06em; }
+    .metric span { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.36fr) minmax(340px, 0.64fr);
+      gap: 18px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 30px;
+      font-weight: 500;
+      letter-spacing: -0.055em;
+    }
+
+    .panel-header p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .mini-tabs { display: flex; gap: 6px; }
+    .mini-tabs button {
+      min-height: 34px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 780;
+    }
+    .mini-tabs button.active { border-color: rgba(199, 166, 106, 0.36); color: var(--cream); background: rgba(199, 166, 106, 0.09); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 15px 18px;
+      border-bottom: 1px solid rgba(237, 232, 221, 0.08);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--faint);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 850;
+    }
+
+    td { color: var(--muted); }
+    .skin-name { display: block; color: var(--text); font-weight: 800; letter-spacing: -0.02em; }
+    .skin-meta { display: block; margin-top: 4px; color: var(--faint); font-size: 11px; }
+    .gain { color: var(--mint); font-weight: 850; }
+    .warn { color: var(--sand); font-weight: 850; }
+    .risk { color: var(--risk); font-weight: 850; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--cream);
+      background: rgba(255, 255, 255, 0.045);
+      font-size: 11px;
+      font-weight: 780;
+    }
+
+    .graph-card { padding: 20px; }
+    .graph-box {
+      position: relative;
+      min-height: 390px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 34% 38%, rgba(199, 166, 106, 0.13), transparent 22%),
+        radial-gradient(circle at 70% 64%, rgba(136, 198, 170, 0.10), transparent 20%),
+        rgba(255, 255, 255, 0.025);
+      overflow: hidden;
+    }
+
+    .graph-box::before,
+    .graph-box::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(237, 232, 221, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(237, 232, 221, 0.035) 1px, transparent 1px);
+      background-size: 34px 34px;
+      opacity: 0.6;
+    }
+
+    .node {
+      position: absolute;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 72px;
+      height: 72px;
+      border: 1px solid rgba(237, 232, 221, 0.24);
+      border-radius: 999px;
+      color: var(--cream);
+      background: rgba(15, 17, 19, 0.84);
+      box-shadow: 0 0 34px rgba(0, 0, 0, 0.4);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .node.big { width: 112px; height: 112px; border-color: rgba(199, 166, 106, 0.48); color: var(--sand); }
+    .node.one { left: 42%; top: 34%; }
+    .node.two { left: 12%; top: 18%; }
+    .node.three { right: 10%; top: 16%; }
+    .node.four { left: 18%; bottom: 13%; }
+    .node.five { right: 18%; bottom: 14%; }
+
+    .drawer-preview {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--surface-2);
+    }
+
+    .drawer-preview small { color: var(--sand); font-size: 10px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+    .drawer-preview h3 { margin: 10px 0 8px; font-family: Georgia, "Times New Roman", serif; font-size: 24px; font-weight: 500; letter-spacing: -0.04em; }
+    .drawer-preview p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+    .actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px; }
+    .actions button {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: var(--cream);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .notes {
+      max-width: 1120px;
+      margin-top: 18px;
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(9, 10, 11, 0.52);
+    }
+
+    .notes strong { display: block; margin-bottom: 8px; font-size: 13px; color: var(--sand); text-transform: uppercase; letter-spacing: 0.12em; }
+    .notes p { margin: 0; color: var(--muted); line-height: 1.65; }
+
+    @media (max-width: 1120px) {
+      .mockup { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; }
+      .hero, .workspace { grid-template-columns: 1fr; }
+      .briefing { min-height: auto; }
+    }
+
+    @media (max-width: 720px) {
+      .main { padding: 18px 14px 34px; }
+      .topbar { grid-template-columns: 1fr; }
+      .top-actions { flex-wrap: wrap; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .panel-header { align-items: start; flex-direction: column; }
+      h1 { font-size: 48px; }
+      th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mockup">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">SG</div>
+        <div>
+          <strong>SkinGraph Radar</strong>
+          <span>Market intelligence</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Workspace</div>
+        <button class="nav-item"><span><i class="nav-dot"></i>Dashboard</span><small>pulse</small></button>
+        <button class="nav-item active"><span><i class="nav-dot"></i>Market Radar</span><small>live</small></button>
+        <button class="nav-item"><span><i class="nav-dot"></i>Risk Cycles</span><small>7</small></button>
+        <button class="nav-item"><span><i class="nav-dot"></i>Graph Explorer</span><small>neo4j</small></button>
+        <button class="nav-item"><span><i class="nav-dot"></i>Traders</span><small>rank</small></button>
+        <button class="nav-item"><span><i class="nav-dot"></i>Watchlist</span><small>local</small></button>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">Markets</div>
+        <button class="nav-item active"><span><i class="nav-dot"></i>CSFloat</span><small>on</small></button>
+        <button class="nav-item active"><span><i class="nav-dot"></i>BUFF163</span><small>on</small></button>
+        <button class="nav-item"><span><i class="nav-dot"></i>Skinport</span><small>off</small></button>
+      </div>
+
+      <div class="scan-card">
+        <strong>Latest deep scan</strong>
+        <p>42 opportunities and 7 suspicious routes across selected markets.</p>
+        <button>Run deep scan</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <label class="search">
+          <span>Search</span>
+          <input value="AK-47 Case Hardened" aria-label="Search">
+        </label>
+        <div class="top-actions">
+          <span class="pill hot">Spread +8%</span>
+          <span class="pill">Risk under 70</span>
+          <span class="pill">JSON export</span>
+        </div>
+      </div>
+
+      <section class="hero">
+        <div class="panel hero-copy">
+          <div class="eyebrow">Graph-based CS2 market intelligence</div>
+          <h1>Find the quiet edge before the market reprices it.</h1>
+          <p>SkinGraph Radar connects skins, instances, traders, transactions and marketplaces into a readable intelligence layer for spreads, sticker premiums, low-float anomalies and suspicious circular routes.</p>
+          <div class="hero-controls">
+            <button class="primary">Open best opportunity</button>
+            <button class="secondary">Inspect graph</button>
+            <button class="secondary">Export current view</button>
+          </div>
+        </div>
+
+        <div class="panel briefing">
+          <div class="briefing-head">
+            <strong>Market briefing</strong>
+            <span>Last 24h</span>
+          </div>
+          <div class="metric-grid">
+            <div class="metric"><small>Detected edge</small><strong>$18.4k</strong><span>Aggregate modeled upside across active opportunities.</span></div>
+            <div class="metric"><small>Median spread</small><strong>11.8%</strong><span>Filtered by liquidity, confidence and risk ceiling.</span></div>
+            <div class="metric"><small>Risk cycles</small><strong>7</strong><span>Routes with abnormal ownership and pricing loops.</span></div>
+            <div class="metric"><small>Signal quality</small><strong>86</strong><span>Composite confidence from graph path strength.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Opportunity feed</h2>
+              <p>Editorial density: less decoration, stronger numeric hierarchy, table still operational.</p>
+            </div>
+            <div class="mini-tabs">
+              <button class="active">Best</button>
+              <button>Low float</button>
+              <button>Sticker</button>
+              <button>Fast flip</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Skin</th>
+                <th>Market</th>
+                <th>Ask</th>
+                <th>Fair value</th>
+                <th>Spread</th>
+                <th>Signal</th>
+                <th>Risk</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="skin-name">AK-47 Case Hardened</span><span class="skin-meta">FT · float 0.19 · rare pattern</span></td>
+                <td>CSFloat</td>
+                <td>$1,280</td>
+                <td>$1,510</td>
+                <td class="gain">+18.0%</td>
+                <td><span class="tag">Sticker premium</span></td>
+                <td class="warn">58</td>
+              </tr>
+              <tr>
+                <td><span class="skin-name">M4A1-S Printstream</span><span class="skin-meta">MW · float 0.08 · thin book</span></td>
+                <td>BUFF163</td>
+                <td>$412</td>
+                <td>$466</td>
+                <td class="gain">+13.1%</td>
+                <td><span class="tag">Low float</span></td>
+                <td>42</td>
+              </tr>
+              <tr>
+                <td><span class="skin-name">AWP Asiimov</span><span class="skin-meta">BS · high velocity trader path</span></td>
+                <td>Skinport</td>
+                <td>$96</td>
+                <td>$104</td>
+                <td class="warn">+8.3%</td>
+                <td><span class="tag">Fast flip</span></td>
+                <td class="risk">71</td>
+              </tr>
+              <tr>
+                <td><span class="skin-name">Desert Eagle Blaze</span><span class="skin-meta">FN · stable demand cluster</span></td>
+                <td>CSFloat</td>
+                <td>$684</td>
+                <td>$742</td>
+                <td class="gain">+8.5%</td>
+                <td><span class="tag">Underpriced</span></td>
+                <td>36</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel graph-card">
+          <div class="graph-box" aria-label="Graph preview">
+            <div class="node big one">Instance</div>
+            <div class="node two">Trader</div>
+            <div class="node three">CSFloat</div>
+            <div class="node four">Sticker</div>
+            <div class="node five">BUFF163</div>
+          </div>
+          <div class="drawer-preview">
+            <small>Selected asset</small>
+            <h3>AK-47 Case Hardened</h3>
+            <p>Potential repricing due to sticker premium and trader route strength. The graph remains the product differentiator, not decoration.</p>
+            <div class="actions">
+              <button>Track</button>
+              <button>Graph</button>
+              <button>Compare</button>
+              <button>Export</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="notes">
+        <strong>Visual direction notes</strong>
+        <p>This direction combines premium financial intelligence with editorial minimalism: cream text, sand accents, fewer glows, softer grid, larger serif display typography, calmer panels and denser data only where the user needs to act.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

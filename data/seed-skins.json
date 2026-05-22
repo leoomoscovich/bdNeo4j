@@ -1,0 +1,12 @@
+[
+  { "id": "skin-ak-redline", "name": "AK-47 | Redline", "weapon": "AK-47", "collection": "The Phoenix Collection", "rarity": "Classified", "imageUrl": "" },
+  { "id": "skin-awp-asiimov", "name": "AWP | Asiimov", "weapon": "AWP", "collection": "The Phoenix Collection", "rarity": "Covert", "imageUrl": "" },
+  { "id": "skin-m4-printstream", "name": "M4A1-S | Printstream", "weapon": "M4A1-S", "collection": "The Fracture Collection", "rarity": "Covert", "imageUrl": "" },
+  { "id": "skin-usp-kill-confirmed", "name": "USP-S | Kill Confirmed", "weapon": "USP-S", "collection": "The Shadow Collection", "rarity": "Covert", "imageUrl": "" },
+  { "id": "skin-deagle-printstream", "name": "Desert Eagle | Printstream", "weapon": "Desert Eagle", "collection": "The Fracture Collection", "rarity": "Covert", "imageUrl": "" },
+  { "id": "skin-glock-fade", "name": "Glock-18 | Fade", "weapon": "Glock-18", "collection": "The Assault Collection", "rarity": "Restricted", "imageUrl": "" },
+  { "id": "skin-ak-fuel-injector", "name": "AK-47 | Fuel Injector", "weapon": "AK-47", "collection": "The Wildfire Collection", "rarity": "Covert", "imageUrl": "" },
+  { "id": "skin-awp-hyper-beast", "name": "AWP | Hyper Beast", "weapon": "AWP", "collection": "The Falchion Collection", "rarity": "Covert", "imageUrl": "" },
+  { "id": "skin-m4-emperor", "name": "M4A4 | The Emperor", "weapon": "M4A4", "collection": "The Prisma Collection", "rarity": "Covert", "imageUrl": "" },
+  { "id": "skin-ak-case-hardened", "name": "AK-47 | Case Hardened", "weapon": "AK-47", "collection": "The Arms Deal Collection", "rarity": "Classified", "imageUrl": "" }
+]

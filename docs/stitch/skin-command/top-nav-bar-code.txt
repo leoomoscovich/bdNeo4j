@@ -1,0 +1,95 @@
+"use client";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Home,
+  LayoutGrid,
+  Box,
+  History,
+  User,
+  Zap
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const navItems = [
+  { label: "Home", icon: Home, href: "/" },
+  { label: "Market", icon: LayoutGrid, href: "/market" },
+  { label: "Crates", icon: Box, href: "/crate-opening" },
+  { label: "History", icon: History, href: "/history" },
+  { label: "Profile", icon: User, href: "/profile" },
+];
+
+const LABEL_WIDTH = 80;
+
+export function TopNavBar() {
+  const pathname = usePathname();
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center p-4">
+      <motion.nav
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 26 }}
+        className="bg-surface/80 backdrop-blur-xl border border-border rounded-full flex items-center p-1.5 shadow-2xl space-x-1"
+      >
+        <div className="px-4 pr-6 flex items-center gap-2 border-r border-border mr-2">
+          <Zap className="text-primary fill-primary w-5 h-5" />
+          <span className="font-bold tracking-tighter text-lg text-white">SKIN COMMAND</span>
+        </div>
+
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+
+          return (
+            <Link key={item.href} href={item.href}>
+              <motion.div
+                whileTap={{ scale: 0.95 }}
+                className={cn(
+                  "flex items-center gap-0 px-4 py-2 rounded-full transition-all duration-300 relative h-10 cursor-pointer",
+                  isActive
+                    ? "bg-primary/20 text-primary"
+                    : "text-text-secondary hover:bg-surface-bright hover:text-white"
+                )}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                
+                <motion.div
+                  initial={false}
+                  animate={{
+                    width: isActive ? "auto" : "0px",
+                    opacity: isActive ? 1 : 0,
+                    marginLeft: isActive ? "8px" : "0px",
+                  }}
+                  className="overflow-hidden whitespace-nowrap"
+                >
+                  <span className="font-semibold text-sm leading-none">
+                    {item.label}
+                  </span>
+                </motion.div>
+                
+                {isActive && (
+                  <motion.div
+                    layoutId="active-glow"
+                    className="absolute inset-0 rounded-full bg-primary/5 shadow-[0_0_15px_rgba(239,68,68,0.3)] -z-10"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </motion.div>
+            </Link>
+          );
+        })}
+
+        <div className="ml-4 pl-4 border-l border-border flex items-center pr-2">
+          <button className="bg-primary text-white text-xs font-bold px-4 py-2 rounded-full hover:brightness-110 transition-all shadow-[0_0_10px_rgba(239,68,68,0.4)]">
+            EXECUTE TRADE
+          </button>
+        </div>
+      </motion.nav>
+    </header>
+  );
+}
+
+export default TopNavBar;

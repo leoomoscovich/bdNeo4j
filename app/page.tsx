@@ -3,9 +3,22 @@ import { Clock, ScrollReveal, CounterRolls } from '@/components/inicio/InicioCli
 import NetworkGraph from '@/components/inicio/NetworkGraph';
 import HeroSequence from '@/components/inicio/HeroSequence';
 import SignalsSection from '@/components/inicio/SignalsSection';
+import { runQuery } from '@/lib/neo4j';
+import { metricsQuery } from '@/lib/queries';
+import { mapMetrics } from '@/lib/graph-mappers';
 import './inicio/inicio.css';
 
-export default function HomePage() {
+async function getMetrics() {
+  try {
+    const result = await runQuery(metricsQuery, {});
+    return mapMetrics(result.records);
+  } catch {
+    return null;
+  }
+}
+
+export default async function HomePage() {
+  const metrics = await getMetrics();
   return (
     <div className="sg">
       <ScrollReveal />
@@ -56,20 +69,20 @@ export default function HomePage() {
         </div>
         <div className="statement__data">
           <div className="kv">
-            <span className="kv__k mono">Skins observadas</span>
-            <span className="kv__v">412.918</span>
+            <span className="kv__k mono">Skins indexadas</span>
+            <span className="kv__v">{metrics ? metrics.skinsIndexed.toLocaleString('es-AR') : '—'}</span>
           </div>
           <div className="kv">
-            <span className="kv__k mono">Transacciones diarias</span>
-            <span className="kv__v">87.4K</span>
+            <span className="kv__k mono">Transacciones registradas</span>
+            <span className="kv__v">{metrics ? metrics.transactionsTracked.toLocaleString('es-AR') : '—'}</span>
           </div>
           <div className="kv">
-            <span className="kv__k mono">Marketplaces conectados</span>
-            <span className="kv__v">06</span>
+            <span className="kv__k mono">Traders activos</span>
+            <span className="kv__v">{metrics ? metrics.activeTraders.toLocaleString('es-AR') : '—'}</span>
           </div>
           <div className="kv">
-            <span className="kv__k mono">Latencia de actualización</span>
-            <span className="kv__v">38<span className="kv__unit">s</span></span>
+            <span className="kv__k mono">Volumen estimado</span>
+            <span className="kv__v">{metrics ? `$${Math.round(metrics.estimatedVolumeUsd / 1000)}K` : '—'}</span>
           </div>
         </div>
       </section>
@@ -504,12 +517,14 @@ export default function HomePage() {
             rutas sospechosas en el<br />
             mercado de skins.
           </h2>
-          <a className="btn btn--red btn--lg" href="#">
-            Abrir dashboard
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
-          </a>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <a className="btn btn--red btn--lg" href="/skins">
+              Ver Mercado
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+            </a>
+          </div>
           <p className="cierre__meta mono">SkinGraph Radar · Inteligencia de mercado para CS2 · 2026</p>
         </div>
       </section>

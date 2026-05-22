@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Market - SKIN COMMAND</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#3a090d",
+                        "on-tertiary-fixed-variant": "#723335",
+                        "on-primary-container": "#5c0008",
+                        "surface-container-low": "#1c1b1b",
+                        "secondary-container": "#881d24",
+                        "on-surface-variant": "#e4beba",
+                        "surface-container": "#201f1f",
+                        "text-secondary": "#a1a1a6",
+                        "secondary-fixed-dim": "#ffb3b0",
+                        "surface-container-highest": "#353534",
+                        "surface-bright": "#3a3939",
+                        "background": "#131313",
+                        "primary-fixed": "#ffdad7",
+                        "secondary": "#ffb3b0",
+                        "surface-container-high": "#2a2a2a",
+                        "on-secondary-fixed-variant": "#881d24",
+                        "inverse-surface": "#e5e2e1",
+                        "on-primary": "#68000a",
+                        "on-error-container": "#ffdad6",
+                        "primary": "#ffb3ad",
+                        "on-error": "#690005",
+                        "on-primary-fixed-variant": "#930013",
+                        "secondary-fixed": "#ffdad8",
+                        "on-secondary-container": "#ff9996",
+                        "text-primary": "#ffffff",
+                        "on-secondary-fixed": "#410006",
+                        "surface-tint": "#ffb3ad",
+                        "inverse-on-surface": "#313030",
+                        "surface-variant": "#353534",
+                        "on-primary-fixed": "#410004",
+                        "border-subtle": "#27272a",
+                        "tertiary-fixed": "#ffdad9",
+                        "on-tertiary": "#561e20",
+                        "surface-dim": "#131313",
+                        "surface": "#131313",
+                        "outline": "#ab8986",
+                        "tertiary-fixed-dim": "#ffb3b2",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-fixed-dim": "#ffb3ad",
+                        "on-tertiary-container": "#4d171a",
+                        "surface-dark": "#18181b",
+                        "on-secondary": "#670211",
+                        "outline-variant": "#5b403e",
+                        "on-surface": "#e5e2e1",
+                        "tertiary-container": "#ca7b7b",
+                        "tertiary": "#ffb3b2",
+                        "inverse-primary": "#b91a24",
+                        "on-background": "#e5e2e1",
+                        "primary-container": "#ff5451"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "container-max": "1920px",
+                        "header-height": "56px",
+                        "gutter": "16px",
+                        "margin-desktop": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Geist"],
+                        "body-lg": ["Geist"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Geist"],
+                        "body-md": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "headline-xl": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-mono": ["12px", { "lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-xl": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #111111; color: #ffffff; }
+        .glow-hover:hover {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+            border-color: theme('colors.primary');
+        }
+        .text-glow { text-shadow: 0 0 8px rgba(255,179,173,0.4); }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface/80 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-border-subtle shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex justify-between items-center h-header-height px-gutter max-w-container-max mx-auto">
+<!-- Brand -->
+<div class="flex items-center gap-6">
+<span class="font-headline-xl text-headline-xl font-bold tracking-tighter text-primary drop-shadow-[0_0_8px_rgba(255,179,173,0.4)]">SKIN COMMAND</span>
+<!-- Desktop Nav -->
+<nav class="hidden md:flex gap-6 items-center h-full">
+<a class="text-text-secondary hover:text-on-surface transition-colors hover:bg-surface-variant/50 transition-all duration-300 h-full flex items-center px-2" href="#">Dashboard</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-semibold h-full flex items-center px-2 mt-1" href="#">Market Routes</a>
+<a class="text-text-secondary hover:text-on-surface transition-colors hover:bg-surface-variant/50 transition-all duration-300 h-full flex items-center px-2" href="#">Portfolio</a>
+</nav>
+</div>
+<!-- Search & Actions -->
+<div class="flex items-center gap-4">
+<!-- Search -->
+<div class="hidden md:flex relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-primary transition-colors text-sm">search</span>
+<input class="bg-[#111111] border border-border-subtle text-text-primary rounded-full pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary focus:shadow-[0_0_10px_rgba(255,84,81,0.2)] transition-all w-48 focus:w-64 font-body-md text-sm placeholder-text-secondary/50" placeholder="Search Intel..." type="text"/>
+</div>
+<button class="bg-[#ef4444] text-white px-4 py-1.5 rounded font-semibold text-sm hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all scale-105 active:scale-95">Execute Trade</button>
+<div class="flex items-center gap-2">
+<button class="p-2 text-text-secondary hover:text-primary transition-colors hover:bg-surface-variant/50 rounded-full"><span class="material-symbols-outlined text-[20px]">notifications</span></button>
+<button class="p-2 text-text-secondary hover:text-primary transition-colors hover:bg-surface-variant/50 rounded-full"><span class="material-symbols-outlined text-[20px]">account_balance_wallet</span></button>
+<button class="p-2 text-text-secondary hover:text-primary transition-colors hover:bg-surface-variant/50 rounded-full"><span class="material-symbols-outlined text-[20px]">settings</span></button>
+</div>
+<img alt="Commander profile avatar" class="w-8 h-8 rounded-full border border-border-subtle cursor-pointer hover:border-primary transition-colors object-cover ml-2" data-alt="A cinematic, high-contrast portrait of a tactical commander in a futuristic setting. Lighting is dramatic, with deep shadows and subtle red rim lights reflecting off tactical gear. The overall aesthetic matches a dark, premium, data-driven command center. The mood is serious and authoritative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgtNMpVZ8P6DOaXrmvkh6DBKxWOEf47757QbL9lVMNdo17gV2IVBh6qOSFDUhmYTD-tsNulOcb_ufDaKTjIIWiTo0LxDvwNJGVbzD3LHb4DOmNYpgWK-9GQxrhuLGdzf9AUvzixJCrTzRou8uuWCMINcRpSrIVikZoZPJ_dEjca8kT93GhhDSv59o2De6qCNTbdVe8S4jpEA5ckqbeIXt7vOvHbbl9zDzE-QV1d2HJ_CKgxU5LioZP_6kYgGc0gdE0-_RdFWty7HG9"/>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<div class="flex flex-1 max-w-container-max mx-auto w-full overflow-hidden">
+<!-- Sidebar Filter -->
+<aside class="w-64 flex-shrink-0 bg-surface-container-low border-r border-border-subtle h-[calc(100vh-56px)] overflow-y-auto sticky top-[56px] hidden md:flex flex-col p-4 gap-6 custom-scrollbar">
+<div>
+<h3 class="font-label-mono text-label-mono text-text-secondary uppercase mb-3">Weapon Class</h3>
+<div class="space-y-2">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="form-checkbox bg-[#111111] border-border-subtle text-primary focus:ring-primary focus:ring-offset-[#111111] rounded-sm transition-colors group-hover:border-primary" type="checkbox"/>
+<span class="text-on-surface group-hover:text-primary transition-colors text-sm">Knives</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="form-checkbox bg-[#111111] border-border-subtle text-primary focus:ring-primary focus:ring-offset-[#111111] rounded-sm transition-colors group-hover:border-primary" type="checkbox"/>
+<span class="text-on-surface group-hover:text-primary transition-colors text-sm">Rifles</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="form-checkbox bg-[#111111] border-border-subtle text-primary focus:ring-primary focus:ring-offset-[#111111] rounded-sm transition-colors group-hover:border-primary" type="checkbox"/>
+<span class="text-on-surface group-hover:text-primary transition-colors text-sm">Pistols</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="form-checkbox bg-[#111111] border-border-subtle text-primary focus:ring-primary focus:ring-offset-[#111111] rounded-sm transition-colors group-hover:border-primary" type="checkbox"/>
+<span class="text-on-surface group-hover:text-primary transition-colors text-sm">Gloves</span>
+</label>
+</div>
+</div>
+<div>
+<h3 class="font-label-mono text-label-mono text-text-secondary uppercase mb-3">Condition</h3>
+<div class="space-y-2">
+<label class="flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-2">
+<input checked="" class="form-checkbox bg-[#111111] border-border-subtle text-primary focus:ring-primary focus:ring-offset-[#111111] rounded-sm transition-colors group-hover:border-primary" type="checkbox"/>
+<span class="text-on-surface group-hover:text-primary transition-colors text-sm">Factory New</span>
+</div>
+<span class="font-label-mono text-[10px] text-text-secondary">FN</span>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-2">
+<input class="form-checkbox bg-[#111111] border-border-subtle text-primary focus:ring-primary focus:ring-offset-[#111111] rounded-sm transition-colors group-hover:border-primary" type="checkbox"/>
+<span class="text-on-surface group-hover:text-primary transition-colors text-sm">Minimal Wear</span>
+</div>
+<span class="font-label-mono text-[10px] text-text-secondary">MW</span>
+</label>
+<label class="flex items-center justify-between cursor-pointer group">
+<div class="flex items-center gap-2">
+<input class="form-checkbox bg-[#111111] border-border-subtle text-primary focus:ring-primary focus:ring-offset-[#111111] rounded-sm transition-colors group-hover:border-primary" type="checkbox"/>
+<span class="text-on-surface group-hover:text-primary transition-colors text-sm">Field-Tested</span>
+</div>
+<span class="font-label-mono text-[10px] text-text-secondary">FT</span>
+</label>
+</div>
+</div>
+<div>
+<h3 class="font-label-mono text-label-mono text-text-secondary uppercase mb-3">Price Range</h3>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<span class="text-text-secondary font-label-mono text-xs">$</span>
+<input class="w-full bg-[#111111] border border-border-subtle text-text-primary rounded px-2 py-1 text-sm focus:border-primary focus:ring-0" placeholder="Min" type="number"/>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-text-secondary font-label-mono text-xs">$</span>
+<input class="w-full bg-[#111111] border border-border-subtle text-text-primary rounded px-2 py-1 text-sm focus:border-primary focus:ring-0" placeholder="Max" type="number"/>
+</div>
+</div>
+</div>
+<button class="mt-auto bg-transparent border border-border-subtle text-text-secondary hover:text-white hover:border-white px-4 py-2 rounded text-sm transition-all duration-300 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">filter_alt_off</span> Reset Filters
+            </button>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 p-4 md:p-6 overflow-y-auto bg-background min-h-[calc(100vh-56px)]">
+<div class="flex justify-between items-end mb-6">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight mb-1 drop-shadow-[0_0_8px_rgba(255,179,173,0.2)]">Market Routes</h1>
+<p class="text-text-secondary text-sm">Real-time asset acquisition and analysis. 1,402 items live.</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="flex h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(255,84,81,0.8)]"></span>
+<span class="font-label-mono text-label-mono text-text-secondary">LIVE FEED</span>
+</div>
+</div>
+<!-- Bento Grid layout for cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+<!-- Card 1 -->
+<div class="bg-surface-dark border border-border-subtle rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 glow-hover flex flex-col relative h-full">
+<!-- Glass badge -->
+<div class="absolute top-2 left-2 bg-black/50 backdrop-blur-md border border-white/10 rounded px-2 py-1 z-10 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed"></span>
+<span class="font-label-mono text-[10px] text-white">STATTRAK™</span>
+</div>
+<div class="h-40 bg-[#111111] relative overflow-hidden flex items-center justify-center p-4">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-dark to-transparent opacity-80 z-0"></div>
+<img alt="Karambit Fade" class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl" data-alt="A highly detailed close-up of a sleek tactical karambit knife. The blade features a mesmerizing, vibrant gradient fade from deep violet to bright pink and yellow. It rests on a dark, industrial metallic surface. Cinematic, high-contrast lighting emphasizes the pristine factory-new condition of the weapon in a dark tech-command aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6gpoH8C6e-qc4NNQR2kXj-NFgh73Q-uOLctNy5hErtE1EniXf1U2NWjLZCGQRt4Do5PfpjDux3JYvsCJ9KVQfL8WqBcHfZGPrUkH_9MONO6a2KgbE9Ijr4FXMhLuWNJBOQZ2eYdC1hCHYJFNX3ElG_DiXSuNn1xpxR2073A8cQVUgoJtGmF87PeWP79y_52zzYYJ125tkNl7VHZH_Yeil7EpMg03DmHoo6GSr7CllLvAFzO-ayx6K8VE3sRqEdrsQIE_4D9L28ipx"/>
+</div>
+<div class="p-4 flex flex-col flex-1 border-t border-border-subtle/50 bg-gradient-to-b from-surface-dark to-[#111111]">
+<h3 class="font-headline-md text-sm font-semibold text-white truncate">★ Karambit | Fade</h3>
+<p class="text-text-secondary text-xs mb-3">Factory New</p>
+<div class="flex justify-between items-center mb-4">
+<div class="flex flex-col">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Float</span>
+<span class="font-label-mono text-xs text-white">0.010245</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Ask Price</span>
+<span class="font-label-mono text-sm text-primary font-bold drop-shadow-[0_0_4px_rgba(255,84,81,0.5)]">$2,450.00</span>
+</div>
+</div>
+<button class="mt-auto w-full bg-transparent border border-border-subtle text-text-secondary group-hover:border-primary group-hover:text-primary py-2 rounded text-sm transition-all duration-300 font-semibold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span> Buy Asset
+                        </button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-dark border border-border-subtle rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 glow-hover flex flex-col relative h-full">
+<div class="absolute top-2 left-2 bg-black/50 backdrop-blur-md border border-white/10 rounded px-2 py-1 z-10 flex items-center gap-1">
+<span class="font-label-mono text-[10px] text-[#eb4b4b]">COVERT</span>
+</div>
+<div class="h-40 bg-[#111111] relative overflow-hidden flex items-center justify-center p-4">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-dark to-transparent opacity-80 z-0"></div>
+<img alt="M4A4 Howl" class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl" data-alt="A tactical modern assault rifle featuring an aggressive, intricate red and black paint job resembling a dragon or beast. The weapon is displayed against a dark, minimalist graphite background with subtle neon red underglow. The lighting is cinematic, highlighting the pristine details of the weapon in a high-tech armory setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRDWM7DWxUP51lh9LPArOHqWOKXhPT8DCd0jRYuUt9PHJr6pCgklZk0Bg7_dsvyfO1v4OS2a3Uxaikr-M4ljptwjh9TBLFWx1pCRV08-QDs2bZWANENcsCNyGidUEEy0j_cRKWnC9Yxqz0S2AoizA4aBIc3FGkFI-pPfkoqx3WVkpC5utuZ0PXM-4kAr9GQ6LNEKEZZlMxXuCE3gFcRE9gEZtwlWM5FL2WfKIjLotlCUFtyBXpBkqaAqmYKHqrI1-BXJvJ5RTde1i_"/>
+</div>
+<div class="p-4 flex flex-col flex-1 border-t border-border-subtle/50 bg-gradient-to-b from-surface-dark to-[#111111]">
+<h3 class="font-headline-md text-sm font-semibold text-white truncate">M4A4 | Howl</h3>
+<p class="text-text-secondary text-xs mb-3">Minimal Wear</p>
+<div class="flex justify-between items-center mb-4">
+<div class="flex flex-col">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Float</span>
+<span class="font-label-mono text-xs text-white">0.081293</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Ask Price</span>
+<span class="font-label-mono text-sm text-primary font-bold drop-shadow-[0_0_4px_rgba(255,84,81,0.5)]">$6,120.50</span>
+</div>
+</div>
+<button class="mt-auto w-full bg-transparent border border-border-subtle text-text-secondary group-hover:border-primary group-hover:text-primary py-2 rounded text-sm transition-all duration-300 font-semibold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span> Buy Asset
+                        </button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-dark border border-border-subtle rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 glow-hover flex flex-col relative h-full">
+<div class="h-40 bg-[#111111] relative overflow-hidden flex items-center justify-center p-4">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-dark to-transparent opacity-80 z-0"></div>
+<img alt="AWP Dragon Lore" class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl filter grayscale-[0.2]" data-alt="A heavy sniper rifle with a deep, mesmerizing emerald green and gold serpentine pattern. It sits on a high-tech black carbon fiber desk. Subtle red laser scanning lights drift across the surface. The aesthetic is dark, premium, and tactical, evoking a digital command center." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxxCiIyEA1WK5eUlMS7ixkRsq3xe7Q-Zs1OhzxG7UI9tcrqwdHqUshurrQahRYCUUkNt5Onznwh_ikoXxlScmXoQTGwA4ngbxha6gS9bZ95jsld06uUYK85zlYLGcPHphsiZ9Ask53J3QcKJBWy3_rrg3-8YMi5q1b4xhAYHH8Endsq5D_W6YRUivRYQeGlxlrMYhU_VNnepykiuvkVDQkmOJWGe4Jfp-0LZ0pOjKJnDpQgsifx77pvOyXhJ_6TX1t2H_pK8u2C0XA"/>
+</div>
+<div class="p-4 flex flex-col flex-1 border-t border-border-subtle/50 bg-gradient-to-b from-surface-dark to-[#111111]">
+<h3 class="font-headline-md text-sm font-semibold text-white truncate">AWP | Medusa</h3>
+<p class="text-text-secondary text-xs mb-3">Field-Tested</p>
+<div class="flex justify-between items-center mb-4">
+<div class="flex flex-col">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Float</span>
+<span class="font-label-mono text-xs text-white">0.245012</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Ask Price</span>
+<span class="font-label-mono text-sm text-primary font-bold drop-shadow-[0_0_4px_rgba(255,84,81,0.5)]">$1,850.00</span>
+</div>
+</div>
+<button class="mt-auto w-full bg-transparent border border-border-subtle text-text-secondary group-hover:border-primary group-hover:text-primary py-2 rounded text-sm transition-all duration-300 font-semibold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span> Buy Asset
+                        </button>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-dark border border-border-subtle rounded-lg overflow-hidden group hover:scale-[1.02] transition-all duration-300 glow-hover flex flex-col relative h-full">
+<div class="absolute top-2 left-2 bg-black/50 backdrop-blur-md border border-white/10 rounded px-2 py-1 z-10 flex items-center gap-1">
+<span class="font-label-mono text-[10px] text-[#eb4b4b]">COVERT</span>
+</div>
+<div class="h-40 bg-[#111111] relative overflow-hidden flex items-center justify-center p-4">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-dark to-transparent opacity-80 z-0"></div>
+<img alt="Specialist Gloves Crimson Kimono" class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl" data-alt="A pair of tactical combat gloves featuring an aggressive crimson red and stark black woven pattern. They are displayed against a sleek, dark obsidian background. Dramatic cinematic spotlighting highlights the fine texture of the fabric and the pristine condition. The overall mood is intense, modern, and aligned with a dark tech command visual identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjLUlBPXjfC95H0_pTqtj-WFcJbyabS6lJV8rUJ2G6BEXCIRhUCfrEoHVIwhtesBWEWIIl6CkK423ZEcErkZIHEx_6balzNZGqj2I4-CJwiDFPhswNlkrmUyMu4VzqPGwmFMwJUYABsCKZ9UM1umlp3smPmyI0pg-XDzJz-3m6lkx4ho8E7-VpTt3Bc-iHPeAjJTSq6W8oKHD9ybNYAuQkt11u3m1VM8Zrk8F6vNxySPtZZgfKQUs5HftAyYP7KjCUSRf7OgnyxVsO"/>
+</div>
+<div class="p-4 flex flex-col flex-1 border-t border-border-subtle/50 bg-gradient-to-b from-surface-dark to-[#111111]">
+<h3 class="font-headline-md text-sm font-semibold text-white truncate">★ Specialist Gloves | Crimson Kimono</h3>
+<p class="text-text-secondary text-xs mb-3">Field-Tested</p>
+<div class="flex justify-between items-center mb-4">
+<div class="flex flex-col">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Float</span>
+<span class="font-label-mono text-xs text-white">0.162391</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-mono text-[10px] text-text-secondary uppercase">Ask Price</span>
+<span class="font-label-mono text-sm text-primary font-bold drop-shadow-[0_0_4px_rgba(255,84,81,0.5)]">$3,200.00</span>
+</div>
+</div>
+<button class="mt-auto w-full bg-[#ef4444] text-white py-2 rounded text-sm transition-all duration-300 font-semibold flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+<span class="material-symbols-outlined text-[16px]">bolt</span> Instant Buy
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
