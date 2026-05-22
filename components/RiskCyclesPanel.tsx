@@ -15,16 +15,16 @@ type RiskCyclesPanelProps = {
 
 const severityConfig: Record<RiskCycle["severity"], { bg: string; text: string }> = {
   CRITICAL: { bg: "bg-red-600", text: "text-white" },
-  HIGH: { bg: "bg-amber-500", text: "text-gray-900" },
-  MEDIUM: { bg: "bg-yellow-400", text: "text-gray-900" },
-  LOW: { bg: "bg-green-500", text: "text-white" },
+  HIGH: { bg: "risk-badge-high", text: "text-white" },
+  MEDIUM: { bg: "risk-badge-medium", text: "text-white" },
+  LOW: { bg: "risk-badge-low", text: "text-white" },
 };
 
 function riskScoreColor(score: number) {
   if (score >= 80) return "bg-red-500";
-  if (score >= 60) return "bg-amber-500";
-  if (score >= 40) return "bg-yellow-400";
-  return "bg-green-500";
+  if (score >= 60) return "risk-fill-high";
+  if (score >= 40) return "risk-fill-medium";
+  return "risk-fill-low";
 }
 
 function formatUsd(value: number) {
@@ -133,7 +133,7 @@ export function RiskCyclesPanel({ selectedId, filters, onSelect }: RiskCyclesPan
             {/* Value moved + time window */}
             <div className="mt-2 flex items-center gap-4 text-[12px] text-[var(--muted)]">
               <span>
-                Movido: <span className="font-semibold text-[var(--green)]">{formatUsd(cycle.valueMovedUsd)}</span>
+                Movido: <span className="font-semibold text-[var(--soft)]">{formatUsd(cycle.valueMovedUsd)}</span>
               </span>
               <span>
                 Ventana: <span className="font-semibold text-[var(--text)]">{cycle.timeWindowHours}h</span>

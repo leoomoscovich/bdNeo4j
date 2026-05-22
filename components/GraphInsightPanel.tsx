@@ -14,16 +14,21 @@ interface GraphInsightPanelProps {
 }
 
 const baseColors: Record<GraphResponse["nodes"][number]["type"], string> = {
-  skin: "#4cc9f0",
-  instance: "#06b6d4",
-  trader: "#9ca3af",
-  transaction: "#f4f7fb",
-  marketplace: "#b388ff",
-  weapon: "#ff9f1c",
-  sticker: "#ff5c7a",
-  collection: "#6ee7b7",
-  price: "#9aa6b8",
+  skin: "#c95a62",
+  instance: "#ef2a2a",
+  trader: "#d9d6d3",
+  transaction: "#f2ece8",
+  marketplace: "#8c434a",
+  weapon: "#d9d6d3",
+  sticker: "#c95a62",
+  collection: "#3a090d",
+  price: "#8c434a",
 };
+
+function cssVar(name: string, fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
 
 const nodeShapes: Record<GraphResponse["nodes"][number]["type"], string> = {
   skin: "ellipse",
@@ -50,9 +55,9 @@ const nodeSizes: Record<GraphResponse["nodes"][number]["type"], number> = {
 };
 
 function riskColor(riskScore: number): string {
-  if (riskScore >= 80) return "#ef4444";
-  if (riskScore >= 60) return "#f97316";
-  if (riskScore >= 40) return "#f59e0b";
+  if (riskScore >= 80) return "#ef2a2a";
+  if (riskScore >= 60) return "#c95a62";
+  if (riskScore >= 40) return "#8c434a";
   return baseColors.instance;
 }
 
@@ -62,6 +67,7 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
   const [graph, setGraph] = useState<GraphResponse | null>(null);
   const [error, setError] = useState("");
   const [fetchingId, setFetchingId] = useState<string | null>(null);
+  const [themeVersion, setThemeVersion] = useState(0);
 
   const activeSelection = graphTarget ?? selectedRiskCycle ?? selectedOpportunity ?? null;
   const isRiskMode = selectedRiskCycle != null || graphTarget?.type === "risk-cycle";
@@ -71,6 +77,12 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
     ? ("instanceId" in graphTarget ? graphTarget.instanceId : "traderId" in graphTarget ? graphTarget.traderId : "marketplaceId" in graphTarget ? graphTarget.marketplaceId : graphTarget.skinId)
     : selectedRiskCycle?.instanceId ?? selectedOpportunity?.instanceId ?? "";
   const loading = activeSelection != null && fetchingId === activeId && graph == null && error === "";
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => setThemeVersion((current) => current + 1));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!activeSelection || !activeId) return;
@@ -104,9 +116,27 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
 
     cyRef.current?.destroy();
 
+    const graphColors = {
+      skin: cssVar("--graph-skin", baseColors.skin),
+      instance: cssVar("--graph-instance", baseColors.instance),
+      trader: cssVar("--graph-trader", baseColors.trader),
+      transaction: cssVar("--graph-transaction", baseColors.transaction),
+      marketplace: cssVar("--graph-marketplace", baseColors.marketplace),
+      weapon: cssVar("--graph-weapon", baseColors.weapon),
+      sticker: cssVar("--graph-sticker", baseColors.sticker),
+      collection: cssVar("--graph-collection", baseColors.collection),
+      price: cssVar("--graph-price", baseColors.price),
+      nodeText: cssVar("--graph-node-text", "#f2ece8"),
+      nodeBorder: cssVar("--graph-node-border", "rgba(242,236,232,0.55)"),
+      textOutline: cssVar("--graph-text-outline", "#050608"),
+      edge: cssVar("--graph-edge", "rgba(201,90,98,0.58)"),
+      riskEdge: cssVar("--graph-risk-edge", "rgba(239,42,42,0.58)"),
+      edgeText: cssVar("--graph-edge-text", "#8c434a"),
+    };
+
     const elements = [
       ...graph.nodes.map((node) => {
-        const color = isRiskMode ? riskColor(riskScore) : baseColors[node.type];
+        const color = isRiskMode ? riskColor(riskScore) : graphColors[node.type];
         return { data: { ...node, color } };
       }),
       ...graph.edges.map((edge) => ({ data: edge })),
@@ -129,12 +159,12 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
           selector: "node",
           style: {
             "background-color": "data(color)",
-            "border-color": "rgba(255,255,255,0.6)",
+            "border-color": graphColors.nodeBorder,
             "border-width": 1,
-            color: "#f4f7fb",
+            color: graphColors.nodeText,
             label: "data(label)",
             "font-size": 10,
-            "text-outline-color": "#080a0f",
+            "text-outline-color": graphColors.textOutline,
             "text-outline-width": 3,
           },
         },
@@ -143,11 +173,11 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
           selector: "edge",
           style: {
             "curve-style": "bezier",
-            "line-color": isRiskMode ? "rgba(239,68,68,0.5)" : "rgba(76,201,240,0.5)",
-            "target-arrow-color": isRiskMode ? "rgba(239,68,68,0.5)" : "rgba(76,201,240,0.5)",
+            "line-color": isRiskMode ? graphColors.riskEdge : graphColors.edge,
+            "target-arrow-color": isRiskMode ? graphColors.riskEdge : graphColors.edge,
             "target-arrow-shape": "triangle",
             label: "data(label)",
-            color: "#9aa6b8",
+            color: graphColors.edgeText,
             "font-size": 8,
             "text-rotation": "autorotate",
           },
@@ -159,7 +189,7 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
     });
 
     return () => cyRef.current?.destroy();
-  }, [graph, isRiskMode, riskScore]);
+  }, [graph, isRiskMode, riskScore, themeVersion]);
 
   if (!activeSelection) {
     return (

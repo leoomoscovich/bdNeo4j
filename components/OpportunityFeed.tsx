@@ -8,12 +8,12 @@ import type { AppFilters, SignalFilter } from "@/lib/ui-state";
 import { serializeMarketplaces } from "@/lib/ui-state";
 
 const SIGNAL_COLORS: Record<SignalType, string> = {
-  UNDERPRICED: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25",
-  FAST_FLIP: "bg-cyan-500/15 text-cyan-400 border border-cyan-500/25",
-  STICKER_PREMIUM: "bg-purple-500/15 text-purple-400 border border-purple-500/25",
-  LOW_FLOAT_PREMIUM: "bg-blue-500/15 text-blue-400 border border-blue-500/25",
-  THIN_MARKET: "bg-amber-500/15 text-amber-400 border border-amber-500/25",
-  RISK_ADJUSTED: "bg-gray-500/15 text-gray-400 border border-gray-500/25",
+  UNDERPRICED: "signal-warm strong",
+  FAST_FLIP: "signal-warm",
+  STICKER_PREMIUM: "signal-burgundy",
+  LOW_FLOAT_PREMIUM: "signal-soft",
+  THIN_MARKET: "signal-muted",
+  RISK_ADJUSTED: "signal-neutral",
 };
 
 const SIGNAL_LABELS: Record<SignalType, string> = {
@@ -26,16 +26,16 @@ const SIGNAL_LABELS: Record<SignalType, string> = {
 };
 
 function spreadColor(spreadPct: number): string {
-  if (spreadPct >= 10) return "text-emerald-400 font-semibold";
-  if (spreadPct >= 5) return "text-amber-400";
-  return "text-gray-400";
+  if (spreadPct >= 10) return "spread-hot";
+  if (spreadPct >= 5) return "spread-warm";
+  return "spread-muted";
 }
 
 function confidenceBar(score: number): string {
-  if (score >= 80) return "bg-emerald-500";
-  if (score >= 60) return "bg-cyan-500";
-  if (score >= 40) return "bg-amber-500";
-  return "bg-gray-600";
+  if (score >= 80) return "confidence-high";
+  if (score >= 60) return "confidence-mid";
+  if (score >= 40) return "confidence-low";
+  return "confidence-muted";
 }
 
 type OpportunityFeedProps = {

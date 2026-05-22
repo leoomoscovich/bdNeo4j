@@ -17,11 +17,11 @@ function severityColor(severity: string) {
     case "CRITICAL":
       return "bg-red-500/20 text-red-400 border-red-500/40";
     case "HIGH":
-      return "bg-orange-500/20 text-orange-400 border-orange-500/40";
+      return "drawer-badge-hot";
     case "MEDIUM":
-      return "bg-amber-500/20 text-amber-400 border-amber-500/40";
+      return "drawer-badge-warm";
     default:
-      return "bg-green-500/20 text-green-400 border-green-500/40";
+      return "drawer-badge-muted";
   }
 }
 
@@ -29,12 +29,12 @@ function signalColor(signal: string) {
   switch (signal) {
     case "UNDERPRICED":
     case "FAST_FLIP":
-      return "bg-green-500/20 text-green-400 border-green-500/40";
+      return "drawer-badge-cream";
     case "STICKER_PREMIUM":
     case "LOW_FLOAT_PREMIUM":
-      return "bg-cyan-500/20 text-cyan-400 border-cyan-500/40";
+      return "drawer-badge-warm";
     case "THIN_MARKET":
-      return "bg-amber-500/20 text-amber-400 border-amber-500/40";
+      return "drawer-badge-muted";
     case "RISK_ADJUSTED":
       return "bg-red-500/20 text-red-400 border-red-500/40";
     default:
@@ -43,28 +43,28 @@ function signalColor(signal: string) {
 }
 
 function scoreColor(score: number) {
-  if (score >= 80) return "text-green-400";
-  if (score >= 60) return "text-amber-400";
+  if (score >= 80) return "text-[var(--soft)]";
+  if (score >= 60) return "text-[var(--primary-soft)]";
   return "text-red-400";
 }
 
 function scoreRingColor(score: number) {
-  if (score >= 80) return "border-green-400/40";
-  if (score >= 60) return "border-amber-400/40";
+  if (score >= 80) return "border-[rgba(217,214,211,0.42)]";
+  if (score >= 60) return "border-[rgba(201,90,98,0.48)]";
   return "border-red-400/40";
 }
 
 function scoreRingBg(score: number) {
-  if (score >= 80) return "from-green-400/14";
-  if (score >= 60) return "from-amber-400/14";
+  if (score >= 80) return "from-[rgba(217,214,211,0.14)]";
+  if (score >= 60) return "from-[rgba(201,90,98,0.16)]";
   return "from-red-400/14";
 }
 
 function riskScoreBarColor(score: number) {
   if (score >= 80) return "bg-red-500";
   if (score >= 60) return "bg-orange-500";
-  if (score >= 40) return "bg-amber-500";
-  return "bg-green-500";
+  if (score >= 40) return "risk-fill-medium";
+  return "risk-fill-low";
 }
 
 export function SelectedAssetDrawer({
@@ -204,7 +204,7 @@ export function SelectedAssetDrawer({
                     value={`${selectedOpportunity.spreadPct >= 0 ? "+" : ""}${selectedOpportunity.spreadPct.toFixed(1)}%`}
                     valueClass={
                       selectedOpportunity.spreadPct >= 0
-                        ? "text-green-400"
+                        ? "text-[var(--soft)]"
                         : "text-red-400"
                     }
                   />
@@ -286,7 +286,7 @@ export function SelectedAssetDrawer({
                 {onTrack && (
                   <button
                     onClick={onTrack}
-                    className="rounded-xl border-0 bg-gradient-to-r from-green-400 to-cyan-400 px-4 py-2.5 text-sm font-black text-[#031018] transition hover:opacity-90"
+                    className="rounded-xl border-0 bg-[var(--primary)] px-4 py-2.5 text-sm font-black text-[var(--text)] transition hover:opacity-90"
                   >
                     Track
                   </button>
@@ -411,7 +411,7 @@ export function SelectedAssetDrawer({
                 {onOpenGraph && (
                   <button
                     onClick={onOpenGraph}
-                    className="rounded-xl border-0 bg-gradient-to-r from-green-400 to-cyan-400 px-4 py-2.5 text-sm font-black text-[#031018] transition hover:opacity-90"
+                    className="rounded-xl border-0 bg-[var(--primary)] px-4 py-2.5 text-sm font-black text-[var(--text)] transition hover:opacity-90"
                   >
                     Open graph
                   </button>

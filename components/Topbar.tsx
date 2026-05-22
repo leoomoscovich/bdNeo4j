@@ -2,7 +2,8 @@
 
 import { useEffect, useState, type ComponentType, type FormEvent } from "react";
 import { motion } from "framer-motion";
-import { Bell, GitBranch, History, LayoutGrid, Search, Settings, Shield, User, Wallet, Zap } from "lucide-react";
+import { Bell, GitBranch, History, LayoutGrid, Moon, Search, Settings, Shield, Sun, User, Wallet, Zap } from "lucide-react";
+import { applyTheme, getInitialTheme, setStoredTheme } from "./ThemeBoot";
 import type { AppFilters, WorkspaceId } from "@/lib/ui-state";
 
 const navItems: Array<{ id: WorkspaceId; label: string; icon: ComponentType<{ size?: number; strokeWidth?: number }> }> = [
@@ -13,6 +14,8 @@ const navItems: Array<{ id: WorkspaceId; label: string; icon: ComponentType<{ si
   { id: "traders", label: "Traders", icon: User },
   { id: "watchlist", label: "Watchlist", icon: History },
 ];
+
+type ThemeMode = "dark" | "light";
 
 type TopbarProps = {
   activeNav: WorkspaceId;
@@ -25,10 +28,23 @@ type TopbarProps = {
 
 export function Topbar({ activeNav, filters, scanStatus, onNavChange, onRunScan, onSearch }: TopbarProps) {
   const [query, setQuery] = useState(filters.query);
+  const [theme, setTheme] = useState<ThemeMode>("dark");
 
   useEffect(() => {
     setQuery(filters.query);
   }, [filters.query]);
+
+  useEffect(() => {
+    const nextTheme = getInitialTheme();
+    setTheme(nextTheme);
+    applyTheme(nextTheme);
+  }, []);
+
+  function handleThemeChange(nextTheme: ThemeMode) {
+    setTheme(nextTheme);
+    setStoredTheme(nextTheme);
+    window.dispatchEvent(new CustomEvent("skin-command-theme-change", { detail: nextTheme }));
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -105,6 +121,28 @@ export function Topbar({ activeNav, filters, scanStatus, onNavChange, onRunScan,
         <span className="filter-pill">{filters.marketplaces.length} markets</span>
         <span className="filter-pill">Min spread: {filters.minSpreadPct}%</span>
         <span className="risk-pill">Max risk: {filters.maxRiskScore}</span>
+        <div className="theme-toggle" role="group" aria-label="Tema de la interfaz">
+          <button
+            type="button"
+            className="theme-toggle-option"
+            aria-pressed={theme === "dark"}
+            onClick={() => handleThemeChange("dark")}
+            title="Dark mode"
+          >
+            <Moon size={14} />
+            <span>Dark</span>
+          </button>
+          <button
+            type="button"
+            className="theme-toggle-option"
+            aria-pressed={theme === "light"}
+            onClick={() => handleThemeChange("light")}
+            title="Light mode"
+          >
+            <Sun size={14} />
+            <span>Light</span>
+          </button>
+        </div>
         <button className="icon-action" aria-label="Notificaciones"><Bell size={17} /></button>
         <button className="icon-action" aria-label="Wallet"><Wallet size={17} /></button>
         <button className="icon-action" aria-label="Configuracion"><Settings size={17} /></button>

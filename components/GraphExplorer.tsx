@@ -10,15 +10,15 @@ type GraphExplorerProps = {
 };
 
 const colors: Record<GraphNode["type"], string> = {
-  skin: "#ffd166",
-  instance: "#ff9f1c",
-  trader: "#4cc9f0",
-  transaction: "#6ee7b7",
-  marketplace: "#b388ff",
-  collection: "#f4f7fb",
-  weapon: "#f4f7fb",
-  sticker: "#ff5c7a",
-  price: "#9aa6b8",
+  skin: "#d9d6d3",
+  instance: "#ef2a2a",
+  trader: "#c95a62",
+  transaction: "#f2ece8",
+  marketplace: "#8c434a",
+  collection: "#3a090d",
+  weapon: "#d9d6d3",
+  sticker: "#c95a62",
+  price: "#8c434a",
 };
 
 export function GraphExplorer({ selectedSkin, onSelectNode }: GraphExplorerProps) {
@@ -58,12 +58,12 @@ export function GraphExplorer({ selectedSkin, onSelectNode }: GraphExplorerProps
           selector: "node",
           style: {
             "background-color": "data(color)",
-            "border-color": "rgba(255,255,255,0.7)",
+            "border-color": "rgba(242,236,232,0.58)",
             "border-width": 1,
-            color: "#f4f7fb",
+            color: "#f2ece8",
             label: "data(label)",
             "font-size": 10,
-            "text-outline-color": "#080a0f",
+            "text-outline-color": "#050608",
             "text-outline-width": 3,
             width: 58,
             height: 58,
@@ -73,11 +73,11 @@ export function GraphExplorer({ selectedSkin, onSelectNode }: GraphExplorerProps
           selector: "edge",
           style: {
             "curve-style": "bezier",
-            "line-color": "rgba(76,201,240,0.7)",
-            "target-arrow-color": "rgba(76,201,240,0.7)",
+            "line-color": "rgba(201,90,98,0.68)",
+            "target-arrow-color": "rgba(201,90,98,0.68)",
             "target-arrow-shape": "triangle",
             label: "data(label)",
-            color: "#9aa6b8",
+            color: "#8c434a",
             "font-size": 8,
             "text-rotation": "autorotate",
           },
