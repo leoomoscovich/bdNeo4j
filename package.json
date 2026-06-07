@@ -10,6 +10,7 @@
     "seed": "tsx scripts/seed-neo4j.ts",
     "ingest": "tsx scripts/ingest-csfloat.ts",
     "enrich": "tsx scripts/enrich-steam.ts",
+    "enrich-images": "tsx scripts/enrich-skin-images.ts",
     "import-all": "tsx scripts/import-all-skins.ts"
   },
   "dependencies": {
@@ -17,6 +18,7 @@
     "@tailwindcss/postcss": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cobe": "^2.0.1",
     "cytoscape": "latest",
     "dotenv": "^17.4.2",
     "framer-motion": "^12.39.0",
@@ -26,6 +28,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "react-force-graph-3d": "^1.29.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "latest"
   },
@@ -34,6 +37,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@types/three": "^0.184.1",
     "eslint": "latest",
     "eslint-config-next": "latest",
     "playwright": "^1.60.0",

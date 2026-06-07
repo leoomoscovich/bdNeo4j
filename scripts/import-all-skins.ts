@@ -123,7 +123,7 @@ function buildTransactions(instanceId: string, finalPrice: number): TxRecord[] {
   const depth = chainDepth(finalPrice);
   const txs: TxRecord[] = [];
   // Work backwards from final price
-  let price = finalPrice;
+  const price = finalPrice;
   let dayOffset = 3;
 
   for (let i = depth - 1; i >= 0; i--) {

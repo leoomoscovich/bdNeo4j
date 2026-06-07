@@ -1,6 +1,7 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Clock, ScrollReveal, CounterRolls } from '@/components/inicio/InicioClient';
-import NetworkGraph from '@/components/inicio/NetworkGraph';
+import NetworkGlobe from '@/components/inicio/NetworkGlobe';
 import HeroSequence from '@/components/inicio/HeroSequence';
 import SignalsSection from '@/components/inicio/SignalsSection';
 import { runQuery } from '@/lib/neo4j';
@@ -105,7 +106,7 @@ export default async function HomePage() {
             <p className="section__dek">El valor no está solo en la skin. Está en quién la compra, quién la vende y cómo esas conexiones se vuelven a cruzar dos, cinco, doce veces.</p>
           </div>
         </header>
-        <NetworkGraph />
+        <NetworkGlobe />
       </section>
 
       {/* ===== 04 · MOVIMIENTOS SOSPECHOSOS ===== */}
@@ -518,12 +519,12 @@ export default async function HomePage() {
             mercado de skins.
           </h2>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <a className="btn btn--red btn--lg" href="/skins">
+            <Link className="btn btn--red btn--lg" href="/skins">
               Ver Mercado
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" strokeWidth="1.4" />
               </svg>
-            </a>
+            </Link>
           </div>
           <p className="cierre__meta mono">SkinGraph Radar · Inteligencia de mercado para CS2 · 2026</p>
         </div>

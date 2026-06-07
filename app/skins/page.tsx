@@ -62,7 +62,7 @@ function LiveClock() {
 
 // ─── Grid card ────────────────────────────────────────────────────────────────
 
-function SkinGridCard({ skin }: { skin: SkinCatalogItem }) {
+function SkinGridCard({ skin, priority = false }: { skin: SkinCatalogItem; priority?: boolean }) {
   const c = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
   const price = fmtPrice(skin.latestPrice);
 
@@ -84,8 +84,9 @@ function SkinGridCard({ skin }: { skin: SkinCatalogItem }) {
               alt={skin.name}
               fill
               sizes="(max-width: 480px) 50vw, (max-width: 800px) 25vw, (max-width: 1280px) 17vw, 12vw"
-              style={{ objectFit: "cover" }}
-              loading="lazy"
+              style={{ objectFit: "contain", padding: 10 }}
+              priority={priority}
+              loading={priority ? undefined : "lazy"}
             />
           ) : (
             <div className="skin-card__media--empty">
@@ -137,7 +138,7 @@ function SkinListRow({ skin }: { skin: SkinCatalogItem }) {
       <td className="col-img">
         <span className="list-thumb">
           {skin.imageUrl && (
-            <Image src={skin.imageUrl} alt={skin.name} width={80} height={48} style={{ objectFit: "cover" }} loading="lazy" />
+            <Image src={skin.imageUrl} alt={skin.name} width={80} height={48} style={{ objectFit: "contain" }} loading="lazy" />
           )}
         </span>
       </td>
@@ -199,7 +200,7 @@ export default function SkinsPage() {
   }, []);
 
   useEffect(() => {
-    setPage(0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSkins(query, weapon, rarity, 0, false);
   }, [query, weapon, rarity, fetchSkins]);
 
@@ -300,7 +301,10 @@ export default function SkinsPage() {
                 placeholder="Buscar por nombre de skin…"
                 autoComplete="off"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setPage(0);
+                  setQuery(e.target.value);
+                }}
               />
               <span className="filters__search-meta">
                 Coincidencias · <b>{loading ? "…" : shown.toLocaleString("es-AR")}</b>
@@ -314,7 +318,10 @@ export default function SkinsPage() {
                 <button
                   className="tag-chip tag-chip--all"
                   aria-pressed={weapon === "*"}
-                  onClick={() => setWeapon("*")}
+                  onClick={() => {
+                    setPage(0);
+                    setWeapon("*");
+                  }}
                 >
                   Todas
                 </button>
@@ -323,13 +330,19 @@ export default function SkinsPage() {
                     key={w}
                     className="tag-chip"
                     aria-pressed={weapon === w}
-                    onClick={() => setWeapon(weapon === w ? "*" : w)}
+                    onClick={() => {
+                      setPage(0);
+                      setWeapon(weapon === w ? "*" : w);
+                    }}
                   >
                     {w.startsWith("Karambit") || w.startsWith("Butterfly") || w.startsWith("M9") ? `★ ${w}` : w}
                   </button>
                 ))}
               </div>
-              <button className="filterset__clear" onClick={() => setWeapon("*")}>Limpiar</button>
+              <button className="filterset__clear" onClick={() => {
+                setPage(0);
+                setWeapon("*");
+              }}>Limpiar</button>
             </div>
 
             {/* Rarity chips */}
@@ -339,7 +352,10 @@ export default function SkinsPage() {
                 <button
                   className="tag-chip tag-chip--all"
                   aria-pressed={rarity === "*"}
-                  onClick={() => setRarity("*")}
+                  onClick={() => {
+                    setPage(0);
+                    setRarity("*");
+                  }}
                 >
                   Todas
                 </button>
@@ -349,14 +365,20 @@ export default function SkinsPage() {
                     className="tag-chip"
                     aria-pressed={rarity === key}
                     style={{ "--c": cssVar } as React.CSSProperties}
-                    onClick={() => setRarity(rarity === key ? "*" : key)}
+                    onClick={() => {
+                      setPage(0);
+                      setRarity(rarity === key ? "*" : key);
+                    }}
                   >
                     <span className="tag-chip__dot" />
                     {key === "Contraband" ? "★ Contraband" : key}
                   </button>
                 ))}
               </div>
-              <button className="filterset__clear" onClick={() => setRarity("*")}>Limpiar</button>
+              <button className="filterset__clear" onClick={() => {
+                setPage(0);
+                setRarity("*");
+              }}>Limpiar</button>
             </div>
 
             {/* Toolbar */}
@@ -461,7 +483,7 @@ export default function SkinsPage() {
                   <span className="catalog-empty__sub">Probá relajar la búsqueda o limpiar las etiquetas activas.</span>
                 </li>
               ) : (
-                sorted.map((skin) => <SkinGridCard key={skin.id} skin={skin} />)
+                sorted.map((skin, index) => <SkinGridCard key={skin.id} skin={skin} priority={index < 8} />)
               )}
             </ol>
           )}

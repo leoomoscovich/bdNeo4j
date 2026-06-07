@@ -1,13 +1,13 @@
 'use client';
 import { useRef, useState, useEffect } from 'react';
-import { motion, useInView, AnimatePresence } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 
 const ease = [0.2, 0.7, 0.2, 1] as const;
 
 /* ── Animated sparkline ────────────────────────────────── */
 function Sparkline({ points, soft, active }: { points: string; soft?: boolean; active: boolean }) {
   return (
-    <svg viewBox="0 0 200 40" preserveAspectRatio="none" style={{ width: '100%', height: 40, display: 'block' }}>
+    <svg viewBox="0 0 200 36" preserveAspectRatio="none" style={{ width: '100%', height: 36, display: 'block' }}>
       <motion.polyline
         points={points}
         fill="none"
@@ -48,7 +48,7 @@ function DistBars({ bars, active }: { bars: { h: number; red?: boolean }[]; acti
 }
 
 /* ── Float bar ─────────────────────────────────────────── */
-function FloatBar({ active }: { active: boolean }) {
+function FloatBar() {
   return (
     <div style={{ position: 'relative', height: 8, background: 'var(--hair)', borderRadius: 4 }}>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '7%', background: 'var(--ink-2)', borderRadius: '4px 0 0 4px' }} />
@@ -76,9 +76,9 @@ function VenueBars({ active }: { active: boolean }) {
     { name: 'SKINPORT', w: 71, red: false },
   ];
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {venues.map((v, i) => (
-        <div key={v.name} style={{ display: 'grid', gridTemplateColumns: '76px 1fr', alignItems: 'center', gap: 10 }}>
+        <div key={v.name} style={{ display: 'grid', gridTemplateColumns: '68px 1fr', alignItems: 'center', gap: 10 }}>
           <span className="mono mono--muted" style={{ fontSize: 10 }}>{v.name}</span>
           <div style={{ height: 6, background: 'var(--hair)', borderRadius: 3, overflow: 'hidden' }}>
             <motion.div
@@ -103,7 +103,7 @@ function Stickers({ active }: { active: boolean }) {
         <motion.span
           key={i}
           style={{
-            flex: 1, height: 34,
+            flex: 1, height: 30,
             background: (red || active)
               ? `repeating-linear-gradient(45deg, var(--red-soft), var(--red-soft) 3px, var(--paper) 3px, var(--paper) 6px)`
               : `repeating-linear-gradient(45deg, var(--hair), var(--hair) 3px, var(--paper) 3px, var(--paper) 6px)`,
@@ -182,7 +182,7 @@ function SignalViz({ viz, active }: { viz: VizDef; active: boolean }) {
   );
   if (viz.type === 'float') return (
     <div className="signal__viz">
-      <FloatBar active={active} />
+      <FloatBar />
       <div className="signal__metric">
         <span className="mono mono--muted">{viz.metric}</span>
         <span className="signal__delta" style={{ color: active ? 'var(--red)' : 'var(--ink)' }}>{viz.delta}</span>
@@ -217,167 +217,235 @@ function LastUpdated() {
 
 /* ── Main component ────────────────────────────────────── */
 export default function SignalsSection() {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLLIElement | null)[]>(Array(6).fill(null));
   const [activeIdx, setActiveIdx] = useState(-1);
+  const [visitedSet, setVisitedSet] = useState<Set<number>>(new Set());
 
   const inView = useInView(sectionRef, { once: true, margin: '0px 0px -10% 0px' });
   const tableInView = useInView(tableRef, { once: true, margin: '0px 0px -5% 0px' });
 
-  // Scroll-driven active signal: scroll progress dentro de la sección → índice en orden
-  // de lectura (izq→der, fila por fila): S/01→S/02→S/03→S/04→S/05→S/06
   useEffect(() => {
+    function activate(idx: number) {
+      setActiveIdx(idx);
+      if (idx < 0) return;
+      setVisitedSet(prev => {
+        if (prev.has(idx)) return prev;
+        return new Set([...prev, idx]);
+      });
+    }
+
     function onScroll() {
+      const wrapper = wrapperRef.current;
       const section = sectionRef.current;
-      if (!section) return;
-      const rect = section.getBoundingClientRect();
-      // scrolled = cuánto hemos avanzado dentro de la sección
-      const scrolled = -rect.top;
-      if (scrolled < 0 || scrolled > rect.height) {
-        setActiveIdx(-1);
-        return;
+      if (!wrapper || !section) return;
+
+      // Sticky mode: wrapper is significantly taller than viewport
+      const isSticky = wrapper.offsetHeight > window.innerHeight * 2;
+
+      if (isSticky) {
+        const rect = wrapper.getBoundingClientRect();
+        const scrolled = -rect.top;
+        const scrollable = rect.height - window.innerHeight;
+
+        if (scrolled < 0) {
+          // Above section — no active card
+          activate(-1);
+          return;
+        }
+        if (scrolled > scrollable) {
+          // Past section — keep last card active so visited state looks complete
+          activate(5);
+          return;
+        }
+        const progress = scrolled / scrollable;
+        // clamp to [0,5], round so going back re-activates properly
+        activate(Math.min(5, Math.max(0, Math.floor(progress * 6))));
+      } else {
+        const rect = section.getBoundingClientRect();
+        const scrolled = -rect.top;
+        if (scrolled < 0) { activate(-1); return; }
+        if (scrolled > rect.height) { activate(5); return; }
+        const progress = scrolled / rect.height;
+        activate(Math.min(5, Math.max(0, Math.floor(progress * 6))));
       }
-      const progress = scrolled / rect.height;
-      // 6 bandas iguales → 0..5 en reading order
-      setActiveIdx(Math.min(5, Math.floor(progress * 6)));
     }
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const allDone = visitedSet.size === 6;
+
   return (
-    <section className="section section--signals-new" id="senales" ref={sectionRef}>
-      <span className="reg reg--tl" aria-hidden="true" />
-      <span className="reg reg--tr" aria-hidden="true" />
+    <>
+      {/* Tall wrapper — forces scroll through all 6 signal states on desktop */}
+      <div className="signals-scroll-track" ref={wrapperRef}>
+        <section className="section section--signals-new" id="senales" ref={sectionRef}>
+          <span className="reg reg--tl" aria-hidden="true" />
+          <span className="reg reg--tr" aria-hidden="true" />
 
-      {/* Header */}
-      <motion.header
-        className="section__head grid"
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, ease }}
-      >
-        <div className="rail">
-          <span className="rail__num">02</span>
-          <span className="rail__label">Señales de mercado</span>
-        </div>
-        <div className="section__title-wrap">
-          <h2 className="section__title">
-            Lo que el radar observa <em>en este momento</em>.
-          </h2>
-          <p className="section__dek">
-            Seis señales recorren el mercado en paralelo. Cada una se mide,
-            se compara entre venues y se cruza con la red de compradores.
-          </p>
-        </div>
-      </motion.header>
+          {/* Header */}
+          <motion.header
+            className="section__head grid"
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, ease }}
+          >
+            <div className="rail">
+              <span className="rail__num">02</span>
+              <span className="rail__label">Señales de mercado</span>
+            </div>
+            <div className="section__title-wrap">
+              <h2 className="section__title">
+                Lo que el radar observa <em>en este momento</em>.
+              </h2>
+              <p className="section__dek">
+                Seis señales recorren el mercado en paralelo. Cada una se mide,
+                se compara entre venues y se cruza con la red de compradores.
+              </p>
+            </div>
+          </motion.header>
 
-      {/* 2 × 3 signal grid */}
-      <ol className="signals-grid">
-        {SIGNALS.map((s, i) => {
-          const active = activeIdx === i;
-          return (
-            <motion.li
-              key={s.id}
-              ref={(el) => { cardRefs.current[i] = el; }}
-              className="signal-card"
-              initial={{ opacity: 0, y: 16 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.08 + i * 0.07, duration: 0.5, ease }}
-              style={{
-                border: active ? '1px solid var(--red)' : '1px solid var(--hair)',
-                boxShadow: active
-                  ? '0 0 0 1px rgba(238,46,46,0.25), 0 12px 48px -16px rgba(238,46,46,0.28), inset 0 0 60px rgba(238,46,46,0.04)'
-                  : 'none',
-                background: active ? 'rgba(238,46,46,0.025)' : 'var(--paper-2)',
-                transition: 'border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-                <span
-                  className="mono"
+          {/* 2×3 / 3×2 signal grid */}
+          <ol className="signals-grid">
+            {SIGNALS.map((s, i) => {
+              const active = activeIdx === i;
+              const visited = visitedSet.has(i) && !active;
+              return (
+                <motion.li
+                  key={s.id}
+                  className="signal-card"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.08 + i * 0.07, duration: 0.5, ease }}
                   style={{
-                    color: active ? 'var(--red)' : 'var(--muted)',
-                    transition: 'color 0.3s ease',
-                    fontSize: 11,
+                    border: active
+                      ? '1px solid var(--red)'
+                      : visited
+                        ? '1px solid var(--hair-2)'
+                        : '1px solid var(--hair)',
+                    boxShadow: active
+                      ? '0 0 0 1px rgba(238,46,46,0.25), 0 12px 48px -16px rgba(238,46,46,0.28), inset 0 0 60px rgba(238,46,46,0.04)'
+                      : 'none',
+                    background: active
+                      ? 'rgba(238,46,46,0.025)'
+                      : visited
+                        ? 'rgba(11,11,12,0.025)'
+                        : 'var(--paper-2)',
+                    transition: 'border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease',
                   }}
                 >
-                  {s.id}
-                </span>
-                {/* Active indicator dot */}
-                <motion.span
-                  style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: 'var(--red)',
-                    display: 'block',
-                  }}
-                  initial={{ opacity: 0, scale: 0.4 }}
-                  animate={active ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.4 }}
-                  transition={{ duration: 0.25, ease }}
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span
+                      className="mono"
+                      style={{
+                        color: active ? 'var(--red)' : visited ? 'var(--ink-2)' : 'var(--muted)',
+                        transition: 'color 0.3s ease',
+                        fontSize: 11,
+                      }}
+                    >
+                      {s.id}
+                    </span>
+                    {/* State indicator dot */}
+                    <motion.span
+                      style={{
+                        width: 5, height: 5, borderRadius: '50%',
+                        background: active ? 'var(--red)' : 'var(--ink-2)',
+                        display: 'block',
+                      }}
+                      initial={{ opacity: 0, scale: 0.4 }}
+                      animate={
+                        active
+                          ? { opacity: 1, scale: 1 }
+                          : visited
+                            ? { opacity: 0.4, scale: 0.8 }
+                            : { opacity: 0, scale: 0.4 }
+                      }
+                      transition={{ duration: 0.25, ease }}
+                    />
+                  </div>
+
+                  <h3 className="signal__title">{s.title}</h3>
+                  <p className="signal__copy">{s.copy}</p>
+                  <SignalViz viz={s.viz} active={active} />
+                </motion.li>
+              );
+            })}
+          </ol>
+
+          {/* Progress indicator — visible only in sticky desktop mode */}
+          <div className="signals-progress">
+            {SIGNALS.map((s, i) => {
+              const active = activeIdx === i;
+              const visited = visitedSet.has(i);
+              return (
+                <span
+                  key={s.id}
+                  className={[
+                    'signals-progress__dot',
+                    active ? 'signals-progress__dot--active' : '',
+                    visited && !active ? 'signals-progress__dot--visited' : '',
+                  ].join(' ')}
                 />
-              </div>
-
-              <h3
-                className="signal__title"
-                style={{ color: active ? 'var(--ink)' : 'var(--ink)', marginBottom: 10 }}
-              >
-                {s.title}
-              </h3>
-              <p className="signal__copy">{s.copy}</p>
-              <SignalViz viz={s.viz} active={active} />
-            </motion.li>
-          );
-        })}
-      </ol>
-
-      {/* Spread report table */}
-      <div className="report" ref={tableRef}>
-        <div className="report__head">
-          <span className="mono mono--muted">Reporte 04·12 · Spreads entre marketplaces</span>
-          <span className="mono mono--muted">Actualizado <LastUpdated /></span>
-        </div>
-        <table className="report__table" aria-label="Spreads entre marketplaces">
-          <thead>
-            <tr>
-              <th>Skin</th><th>Wear</th>
-              <th className="num">CSFloat</th><th className="num">BUFF163</th><th className="num">Skinport</th>
-              <th className="num">Spread</th><th>Señal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { skin: 'AK-47 │ Voltaic',       wear: 'FN 0.018', csf: '$1.842', buf: '$1.610', skp: '$1.789', spread: '+14,4%', up: true,  tag: 'Spread amplio', rc: true,  rs: false },
-              { skin: 'M4A1-S │ Printstream',  wear: 'MW 0.094', csf: '$612',   buf: '$598',   skp: '$641',   spread: '+7,2%',  up: false, tag: 'Estable',       rc: false, rs: false },
-              { skin: 'AWP │ Wildfire',         wear: 'FT 0.221', csf: '$284',   buf: '$249',   skp: '$271',   spread: '+14,1%', up: true,  tag: 'Spread amplio', rc: true,  rs: false },
-              { skin: 'Glock-18 │ Fade',        wear: 'FN 0.006', csf: '$1.120', buf: '$1.180', skp: '$1.144', spread: '+5,3%',  up: false, tag: 'Float premium', rc: false, rs: true  },
-              { skin: 'USP-S │ Kill Confirmed', wear: 'FT 0.182', csf: '$402',   buf: '$380',   skp: '$418',   spread: '+10,0%', up: false, tag: 'Liquidez baja', rc: false, rs: false },
-              { skin: 'Karambit │ Doppler P2',  wear: 'FN 0.012', csf: '$2.940', buf: '$2.610', skp: '$2.802', spread: '+12,6%', up: true,  tag: 'Reaparición',   rc: true,  rs: false },
-            ].map((row, i) => (
-              <motion.tr
-                key={row.skin}
-                initial={{ opacity: 0, x: -8 }}
-                animate={tableInView ? { opacity: 1, x: 0 } : {}}
-                transition={{ delay: 0.1 + i * 0.06, duration: 0.45, ease }}
-                style={{ position: 'relative' }}
-              >
-                <td>{row.skin}</td>
-                <td className="mono">{row.wear}</td>
-                <td className="num">{row.csf}</td>
-                <td className="num">{row.buf}</td>
-                <td className="num">{row.skp}</td>
-                <td className={`num${row.up ? ' num--up' : ''}`}>{row.spread}</td>
-                <td>
-                  <span className={`tag${row.rc ? ' tag--red' : row.rs ? ' tag--soft' : ''}`}>
-                    {row.tag}
-                  </span>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+              );
+            })}
+            <span className={`signals-progress__count${allDone ? ' signals-progress__count--done' : ''}`}>
+              {visitedSet.size} / 6
+            </span>
+          </div>
+        </section>
       </div>
-    </section>
+
+      {/* Spread report table — appears after the sticky section exits */}
+      <div style={{ padding: '0 var(--pad)', background: 'var(--paper)' }}>
+        <div className="report" ref={tableRef} style={{ maxWidth: 'var(--maxw)', margin: '48px auto 0' }}>
+          <div className="report__head">
+            <span className="mono mono--muted">Reporte 04·12 · Spreads entre marketplaces</span>
+            <span className="mono mono--muted">Actualizado <LastUpdated /></span>
+          </div>
+          <table className="report__table" aria-label="Spreads entre marketplaces">
+            <thead>
+              <tr>
+                <th>Skin</th><th>Wear</th>
+                <th className="num">CSFloat</th><th className="num">BUFF163</th><th className="num">Skinport</th>
+                <th className="num">Spread</th><th>Señal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { skin: 'AK-47 │ Voltaic',       wear: 'FN 0.018', csf: '$1.842', buf: '$1.610', skp: '$1.789', spread: '+14,4%', up: true,  tag: 'Spread amplio', rc: true,  rs: false },
+                { skin: 'M4A1-S │ Printstream',  wear: 'MW 0.094', csf: '$612',   buf: '$598',   skp: '$641',   spread: '+7,2%',  up: false, tag: 'Estable',       rc: false, rs: false },
+                { skin: 'AWP │ Wildfire',         wear: 'FT 0.221', csf: '$284',   buf: '$249',   skp: '$271',   spread: '+14,1%', up: true,  tag: 'Spread amplio', rc: true,  rs: false },
+                { skin: 'Glock-18 │ Fade',        wear: 'FN 0.006', csf: '$1.120', buf: '$1.180', skp: '$1.144', spread: '+5,3%',  up: false, tag: 'Float premium', rc: false, rs: true  },
+                { skin: 'USP-S │ Kill Confirmed', wear: 'FT 0.182', csf: '$402',   buf: '$380',   skp: '$418',   spread: '+10,0%', up: false, tag: 'Liquidez baja', rc: false, rs: false },
+                { skin: 'Karambit │ Doppler P2',  wear: 'FN 0.012', csf: '$2.940', buf: '$2.610', skp: '$2.802', spread: '+12,6%', up: true,  tag: 'Reaparición',   rc: true,  rs: false },
+              ].map((row, i) => (
+                <motion.tr
+                  key={row.skin}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={tableInView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: 0.1 + i * 0.06, duration: 0.45, ease }}
+                  style={{ position: 'relative' }}
+                >
+                  <td>{row.skin}</td>
+                  <td className="mono">{row.wear}</td>
+                  <td className="num">{row.csf}</td>
+                  <td className="num">{row.buf}</td>
+                  <td className="num">{row.skp}</td>
+                  <td className={`num${row.up ? ' num--up' : ''}`}>{row.spread}</td>
+                  <td>
+                    <span className={`tag${row.rc ? ' tag--red' : row.rs ? ' tag--soft' : ''}`}>
+                      {row.tag}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }

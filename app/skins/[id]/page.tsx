@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { SkinDetailResponse, JourneyStep, TraderReputation, InstanceSummary } from "@/lib/types";
 
 // ─── reputation badge ──────────────────────────────────────────────────────────
@@ -262,6 +263,7 @@ export default function SkinDetailPage() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { loadDetail(); }, [id]);
 
   function handleInstanceChange(instId: string) {
@@ -300,8 +302,20 @@ export default function SkinDetailPage() {
           <Link href="/skins" className="text-[var(--c-muted)] text-sm hover:text-[var(--c-fg)] transition-colors">
             ← Catálogo
           </Link>
-          <div className="flex items-start justify-between mt-2">
-            <div>
+          <div className="flex flex-wrap items-start justify-between gap-4 mt-2">
+            {skin.imageUrl && (
+              <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded border border-[var(--c-border)] bg-black/20">
+                <Image
+                  src={skin.imageUrl}
+                  alt={skin.name}
+                  fill
+                  sizes="144px"
+                  priority
+                  style={{ objectFit: "contain", padding: 10 }}
+                />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-mono text-[var(--c-muted)]">{skin.weapon} · {skin.rarity}</p>
               <h1 className="text-2xl font-semibold">{skin.name}</h1>
               {skin.collection && <p className="text-xs text-[var(--c-muted)] mt-0.5">{skin.collection}</p>}

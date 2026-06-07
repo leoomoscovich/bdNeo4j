@@ -115,6 +115,12 @@ Seed local graph data:
 npm run seed
 ```
 
+Populate real CS2 skin images from ByMykel/CSGO-API:
+
+```bash
+npm run enrich-images
+```
+
 Start the website locally:
 
 ```bash
@@ -131,6 +137,7 @@ Neo4j Browser is available at `http://localhost:7474` with user `neo4j` and pass
 - `npm run build`: creates a production build.
 - `npm run start`: serves the production build.
 - `npm run seed`: clears and reloads local Neo4j seed data.
+- `npm run enrich-images`: fetches ByMykel/CSGO-API skin metadata and stores matching `Skin.imageUrl` values in Neo4j.
 - `npm run lint`: runs ESLint.
 
 ## Current APIs
@@ -187,6 +194,7 @@ For data-backed work, also run:
 
 ```bash
 npm run seed
+npm run enrich-images
 npm run dev
 ```
 

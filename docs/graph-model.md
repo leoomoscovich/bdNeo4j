@@ -2,7 +2,7 @@
 
 ## Nodes
 
-- `Skin`: skin base, con `id`, `name`, `rarity`, `imageUrl`.
+- `Skin`: skin base, con `id`, `name`, `rarity`, `imageUrl`. `imageUrl` se enriquece desde ByMykel/CSGO-API con `npm run enrich-images`.
 - `SkinInstance`: instancia comerciable, con `id`, `float`, `wear`, `serial`.
 - `Trader`: usuario del mercado, con `id`, `name`, `country`, `reputation`.
 - `Transaction`: venta o trade, con `id`, `priceUsd`, `timestamp`.

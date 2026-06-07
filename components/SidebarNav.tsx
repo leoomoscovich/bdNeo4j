@@ -1,6 +1,7 @@
 import type { ScanSummary } from "@/lib/types";
 import { marketplaceIds, type MarketplaceId, type WorkspaceId } from "@/lib/ui-state";
-import { Activity, BarChart3, DatabaseZap, Eye, GitBranch, LayoutDashboard, Radar, Scale, ShieldAlert, Star, Users, Layers } from "lucide-react";
+import Link from "next/link";
+import { Activity, BarChart3, DatabaseZap, Eye, GitBranch, Radar, Scale, ShieldAlert, Star, Users, Layers } from "lucide-react";
 import type { ComponentType } from "react";
 
 type SidebarNavItem = {
@@ -53,9 +54,9 @@ export function SidebarNav({
         </div>
       </div>
 
-      <a href="/skins" className="nav-item" style={{ marginBottom: 4, textDecoration: "none" }}>
+      <Link href="/skins" className="nav-item" style={{ marginBottom: 4, textDecoration: "none" }}>
         <span><Layers size={16} /> Catálogo de skins</span>
-      </a>
+      </Link>
 
       <div className="nav-group">
         <div className="nav-label">Workspace</div>

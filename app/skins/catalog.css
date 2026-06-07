@@ -553,3 +553,74 @@ td:first-child { width: 1%; padding-right: 0; }
 .reg--tr { top: 18px; right: 18px; }
 .reg--bl { bottom: 18px; left: 18px; }
 .reg--br { bottom: 18px; right: 18px; }
+
+/* ── Responsive additions ───────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* Nav top row: hide secondary links */
+  .cat-nav__links {
+    display: none;
+  }
+
+  /* Nav row 2: stack columns */
+  .cat-nav__row2 .inner {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding-block: 8px;
+  }
+
+  .cat-nav__row2 .center,
+  .cat-nav__row2 .right {
+    justify-content: flex-start;
+  }
+
+  /* Filters: hide search meta count */
+  .filters__search-meta {
+    display: none;
+  }
+
+  /* Filterset: hide clear button at small sizes */
+  .filterset__clear {
+    display: none;
+  }
+
+  /* Toolbar: stack */
+  .filters__toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* List view: horizontal scroll on small screens */
+  .list-view {
+    overflow-x: auto;
+  }
+
+  .list-view table {
+    min-width: 640px;
+  }
+
+  /* Footer: stack */
+  .cat-foot__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Grid: single column on very small screens */
+  .grid-view {
+    grid-template-columns: 1fr;
+  }
+
+  /* Masthead title smaller */
+  .cat-head__title {
+    font-size: clamp(40px, 14vw, 80px);
+  }
+
+  /* Stat value smaller */
+  .cat-head__stat .v {
+    font-size: clamp(36px, 10vw, 56px);
+  }
+}
