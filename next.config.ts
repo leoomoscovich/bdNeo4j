@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "community.akamai.steamstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.steamstatic.com",
+      },
+      {
+        protocol: "https",
         hostname: "steamcommunity-a.akamaihd.net",
       },
       {

@@ -25,7 +25,7 @@ tar --exclude='.next/dev' \
     --exclude='.next/cache' \
     --exclude='public/animation' \
     -czf "$PACKAGE" \
-    .next public package.json package-lock.json
+    .next public package.json package-lock.json next.config.ts
 echo "Paquete: $(du -sh $PACKAGE | cut -f1)"
 
 echo "=== [3/4] Subir y extraer en servidor ==="
