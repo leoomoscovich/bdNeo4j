@@ -38,6 +38,18 @@
   box-sizing: border-box;
 }
 
+/* ── Focus management: invisible on mouse, visible on keyboard ── */
+*:focus                  { outline: none; }
+*:focus-visible          {
+  outline: 2px solid var(--red, #EE2E2E);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+/* Inside dark panels, invert to a light ring so the red pops */
+.app *:focus-visible     {
+  outline-color: #EDEAE2;
+}
+
 html {
   scroll-behavior: smooth;
 }
