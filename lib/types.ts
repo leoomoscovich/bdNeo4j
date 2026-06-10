@@ -166,6 +166,14 @@ export type InstanceSummary = {
   }>;
 };
 
+export type VenuePrice = {
+  marketplace: string;
+  wear: string;
+  priceUsd: number;
+  quantity: number | null;
+  observedAt: string;
+};
+
 export type SkinDetail = {
   id: string;
   name: string;
@@ -174,6 +182,7 @@ export type SkinDetail = {
   rarity: string;
   imageUrl: string;
   instances: InstanceSummary[];
+  venuePrices: VenuePrice[];
 };
 
 export type JourneyStep = {

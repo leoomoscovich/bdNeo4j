@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import * as THREE from "three";
 import type { GraphNode, GraphResponse } from "@/lib/types";
@@ -81,9 +81,15 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  /* luces + encuadre apenas la escena está disponible (no esperar engineStop) */
+  /* luces + encuadre apenas la escena está disponible (no esperar engineStop).
+     Si el usuario interactúa antes, se cancela el encuadre para no pelearle la cámara. */
   useEffect(() => {
     let tries = 0;
+    let userTookOver = false;
+    const container = containerRef.current;
+    const onPointerDown = () => { userTookOver = true; };
+    container?.addEventListener("pointerdown", onPointerDown);
+
     const id = setInterval(() => {
       const fg = fgRef.current;
       tries += 1;
@@ -99,15 +105,18 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
           fill.position.set(-1, -0.6, 0.4);
           scene.add(fill);
         }
-        if (tries > 12) {
-          fg.zoomToFit(500, 50);
+        if (tries > 8) {
+          if (!userTookOver) fg.zoomToFit(500, 50);
           clearInterval(id);
         }
       } else if (tries > 40) {
         clearInterval(id);
       }
     }, 150);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      container?.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [graph]);
 
   const nodeThreeObject = useCallback((nodeObj: object) => {
@@ -160,21 +169,24 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
     }
   }, [onNodeClick]);
 
-  pulseMeshes.current = [];
-
-  const riskTraders = new Set(
-    graph.nodes.filter((n) => isRiskyNode(n)).map((n) => n.id),
-  );
-
-  const data = {
-    nodes: graph.nodes.map((n) => ({ ...n })),
-    links: graph.edges.map((e): FGLink => ({
-      source: e.source,
-      target: e.target,
-      label: e.label,
-      risk: riskMode || riskTraders.has(e.source) || riskTraders.has(e.target),
-    })),
-  };
+  /* Identidad estable: si esto se reconstruye en cada render, react-force-graph
+     interpreta "grafo nuevo" y reinicia la simulación con cada click/setState
+     del padre — los nodos saltan y la interacción parece muerta. */
+  const data = useMemo(() => {
+    pulseMeshes.current = [];
+    const riskTraders = new Set(
+      graph.nodes.filter((n) => isRiskyNode(n)).map((n) => n.id),
+    );
+    return {
+      nodes: graph.nodes.map((n) => ({ ...n })),
+      links: graph.edges.map((e): FGLink => ({
+        source: e.source,
+        target: e.target,
+        label: e.label,
+        risk: riskMode || riskTraders.has(e.source) || riskTraders.has(e.target),
+      })),
+    };
+  }, [graph, riskMode]);
 
   return (
     <div ref={containerRef} className="graph3d-wrap" style={{ height, position: "relative", overflow: "hidden" }}>

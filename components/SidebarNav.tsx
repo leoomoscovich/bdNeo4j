@@ -14,7 +14,8 @@ type SidebarNavItem = {
 const navItems: SidebarNavItem[] = [
   { id: "dashboard", label: "Resumen", icon: Shield },
   { id: "market-radar", label: "Mercado", icon: BarChart3, badge: "live" },
-  { id: "risk-cycles", label: "Ciclos de riesgo", icon: ShieldAlert },
+  { id: "patterns", label: "Patrones", icon: Radar },
+  { id: "risk-cycles", label: "Vendedores de riesgo", icon: ShieldAlert },
   { id: "graph-explorer", label: "Explorador de grafo", icon: GitBranch },
   { id: "traders", label: "Traders", icon: Users },
   { id: "watchlist", label: "Seguimiento", icon: Star, badge: "local" },
@@ -22,8 +23,9 @@ const navItems: SidebarNavItem[] = [
 
 const marketplaceIcons: Record<MarketplaceId, ComponentType<{ size?: number; strokeWidth?: number }>> = {
   CSFloat: Activity,
-  BUFF163: Eye,
   Skinport: Scale,
+  "Market.CSGO": Eye,
+  "Steam Market": Layers,
 };
 
 type SidebarNavProps = {

@@ -94,20 +94,28 @@ export function mapMetrics(records: Neo4jRecord[]): MetricsResponse {
   };
 }
 
+function getOpt(record: Neo4jRecord, key: string): Node | null {
+  return record.keys.includes(key) ? (record.get(key) as Node | null) : null;
+}
+
 export function mapGraph(records: Neo4jRecord[]): GraphResponse {
   const nodes = new Map<string, GraphNode>();
   const edges = new Map<string, GraphEdge>();
 
   for (const record of records) {
-    const skin = record.get("skin") as Node | null;
-    const weapon = record.get("weapon") as Node | null;
-    const collection = record.get("collection") as Node | null;
-    const instance = record.get("instance") as Node | null;
-    const sticker = record.get("sticker") as Node | null;
-    const tx = record.get("tx") as Node | null;
-    const marketplace = record.get("marketplace") as Node | null;
-    const buyer = record.get("buyer") as Node | null;
-    const seller = record.get("seller") as Node | null;
+    const skin = getOpt(record, "skin");
+    const weapon = getOpt(record, "weapon");
+    const collection = getOpt(record, "collection");
+    const instance = getOpt(record, "instance");
+    const sticker = getOpt(record, "sticker");
+    const tx = getOpt(record, "tx");
+    const marketplace = getOpt(record, "marketplace");
+    const buyer = getOpt(record, "buyer");
+    const seller = getOpt(record, "seller");
+    const price = getOpt(record, "price");
+    const priceMarketplace = getOpt(record, "priceMarketplace");
+    const trader = getOpt(record, "trader");
+    addNode(nodes, trader);
 
     addNode(nodes, skin);
     addNode(nodes, weapon);
@@ -127,6 +135,34 @@ export function mapGraph(records: Neo4jRecord[]): GraphResponse {
     addEdge(edges, tx, marketplace, "ON_MARKETPLACE");
     addEdge(edges, buyer, tx, "BOUGHT");
     addEdge(edges, seller, tx, "SOLD");
+
+    addNode(nodes, price);
+    addNode(nodes, priceMarketplace);
+    addEdge(edges, price, skin, "FOR_SKIN");
+    addEdge(edges, price, priceMarketplace, "ON_MARKETPLACE");
+  }
+
+  return { nodes: [...nodes.values()], edges: [...edges.values()] };
+}
+
+/* Vecindario inmediato de cualquier nodo (expansión interactiva del grafo). */
+export function mapExpansion(records: Neo4jRecord[]): GraphResponse {
+  const nodes = new Map<string, GraphNode>();
+  const edges = new Map<string, GraphEdge>();
+
+  for (const record of records) {
+    const n = record.get("n") as Node;
+    const m = record.get("m") as Node;
+    const relType = String(record.get("relType"));
+    const sourceId = String(record.get("sourceId"));
+
+    addNode(nodes, n);
+    addNode(nodes, m);
+    if (nodeId(n) === sourceId) {
+      addEdge(edges, n, m, relType);
+    } else {
+      addEdge(edges, m, n, relType);
+    }
   }
 
   return { nodes: [...nodes.values()], edges: [...edges.values()] };
@@ -198,292 +234,155 @@ function stringList(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => str(item)).filter(Boolean) : [];
 }
 
-function deriveSignal(spreadPct: number, events: Array<Record<string, unknown>>, stickerCount: number): SignalType {
-  if (spreadPct >= 10) {
-    return "UNDERPRICED";
-  }
-
-  const hasFastFlip = events.length >= 2 && (() => {
-    const timestamps = events
-      .map((e) => {
-        const tx = e.tx as Node | undefined;
-        if (!tx) return 0;
-        return num((tx.properties as Record<string, unknown>)?.timestamp);
-      })
-      .filter((t) => t > 0)
-      .sort((a, b) => a - b);
-
-    if (timestamps.length < 2) return false;
-    const hoursDiff = (timestamps[timestamps.length - 1] - timestamps[0]) / 3600;
-    const prices = events
-      .map((e) => {
-        const tx = e.tx as Node | undefined;
-        if (!tx) return 0;
-        return num((tx.properties as Record<string, unknown>)?.priceUsd);
-      });
-
-    return hoursDiff <= 168 && prices[0] > prices[prices.length - 1];
-  })();
-
-  if (hasFastFlip) {
-    return "FAST_FLIP";
-  }
-
-  if (stickerCount > 0) {
-    return "STICKER_PREMIUM";
-  }
-
-  if (spreadPct > 0 && spreadPct < 5) {
-    return "THIN_MARKET";
-  }
-
-  return "RISK_ADJUSTED";
+/* Señal derivada SOLO de propiedades observables del listing real:
+   spread vs precio predicho por el mercado, factor de float, stickers, watchers. */
+function deriveSignal(spreadPct: number, floatFactor: number, stickerCount: number, watchers: number, sellerRisk: number): SignalType {
+  if (spreadPct >= 10) return "UNDERPRICED";
+  if (floatFactor >= 1.03) return "LOW_FLOAT_PREMIUM";
+  if (stickerCount > 0) return "STICKER_PREMIUM";
+  if (watchers >= 3) return "FAST_FLIP";
+  if (sellerRisk >= 50) return "RISK_ADJUSTED";
+  return "THIN_MARKET";
 }
 
-function deriveRiskScore(events: Array<Record<string, unknown>>): number {
-  let score = 0;
-
-  const uniqueTraders = new Set<string>();
-  for (const event of events) {
-    const buyer = event.buyer as Node | null;
-    const seller = event.seller as Node | null;
-    if (buyer) uniqueTraders.add(nodeId(buyer));
-    if (seller) uniqueTraders.add(nodeId(seller));
-  }
-
-  if (uniqueTraders.size >= 3) {
-    score += 20;
-  }
-
-  const timestamps = events
-    .map((e) => {
-      const tx = e.tx as Node | undefined;
-      if (!tx) return 0;
-      return num((tx.properties as Record<string, unknown>)?.timestamp);
-    })
-    .filter((t) => t > 0);
-
-  if (timestamps.length >= 2) {
-    const hoursDiff = (Math.max(...timestamps) - Math.min(...timestamps)) / 3600;
-    if (hoursDiff <= 24) {
-      score += 15;
-    }
-  }
-
-  const prices = events
-    .map((e) => {
-      const tx = e.tx as Node | undefined;
-      if (!tx) return 0;
-      return num((tx.properties as Record<string, unknown>)?.priceUsd);
-    })
-    .filter((p) => p > 0);
-
-  if (prices.length >= 2) {
-    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-    const variance = prices.reduce((sum, p) => sum + Math.pow(p - avg, 2), 0) / prices.length;
-    const cv = avg > 0 ? Math.sqrt(variance) / avg : 0;
-    if (cv > 0.3) {
-      score += 5;
-    }
-  }
-
-  return Math.min(score, 100);
-}
-
-function deriveConfidenceScore(spreadPct: number, eventCount: number, riskScore: number): number {
+function deriveConfidenceScore(spreadPct: number, sellerTrades: number, riskScore: number): number {
   const spreadComponent = Math.min(spreadPct / 20, 1) * 40;
-  const eventComponent = Math.min(eventCount / 5, 1) * 30;
+  const historyComponent = Math.min(sellerTrades / 200, 1) * 30;
   const riskComponent = (1 - riskScore / 100) * 30;
-  return Math.round(spreadComponent + eventComponent + riskComponent);
-}
-
-function buildTraderPath(events: Array<Record<string, unknown>>): string[] {
-  const path: string[] = [];
-  const seen = new Set<string>();
-
-  for (const event of events) {
-    const seller = event.seller as Node | null;
-    const buyer = event.buyer as Node | null;
-    if (seller) {
-      const name = nodeLabel(seller);
-      if (!seen.has(name)) {
-        seen.add(name);
-        path.push(name);
-      }
-    }
-    if (buyer) {
-      const name = nodeLabel(buyer);
-      if (!seen.has(name)) {
-        seen.add(name);
-        path.push(name);
-      }
-    }
-  }
-
-  return path;
-}
-
-function buildEventTimeline(events: Array<Record<string, unknown>>): Opportunity["eventTimeline"] {
-  return events
-    .filter((e) => e.tx)
-    .map((e) => {
-      const tx = e.tx as Node | undefined;
-      const txProps = tx ? (tx.properties as Record<string, unknown>) : {};
-      const marketplace = e.marketplace as Node | null;
-      const buyer = e.buyer as Node | null;
-      const seller = e.seller as Node | null;
-      const timestamp = num(txProps.timestamp);
-      const dateStr = timestamp > 0 ? new Date(timestamp * 1000).toISOString() : undefined;
-
-      return {
-        title: `${marketplace ? nodeLabel(marketplace) : "Marketplace"} · $${num(txProps.priceUsd)}`,
-        description: `${seller ? nodeLabel(seller) : "seller"} -> ${buyer ? nodeLabel(buyer) : "buyer"}`,
-        timestamp: dateStr,
-      };
-    });
+  return Math.round(spreadComponent + historyComponent + riskComponent);
 }
 
 export function mapOpportunities(records: Neo4jRecord[]): Opportunity[] {
   return records.map((record, index) => {
     const skin = record.get("skin") as Node | null;
+    const weapon = record.get("weapon") as Node | null;
     const instance = record.get("instance") as Node | null;
-    const latest = record.get("latest") as Record<string, unknown> | null;
-    const events = (record.get("events") as Array<Record<string, unknown>>) || [];
+    const tx = record.get("tx") as Node | null;
+    const marketplace = record.get("marketplace") as Node | null;
+    const seller = record.get("seller") as Node | null;
+    const stickers = (record.get("stickers") as Array<unknown>) || [];
     const currentAskUsd = num(record.get("currentAskUsd"));
     const fairValueUsd = num(record.get("fairValueUsd"));
     const spreadPct = Math.round(num(record.get("spreadPct")) * 100) / 100;
-    const stickers = (record.get("stickers") as Array<unknown>) || [];
 
-    const weaponNode = skin ? (() => {
-      const weapon = skin.properties.weapon as Node | null;
-      return weapon ? nodeLabel(weapon) : "";
-    })() : "";
+    const txProps = (tx?.properties ?? {}) as Record<string, unknown>;
+    const sellerProps = (seller?.properties ?? {}) as Record<string, unknown>;
+    const riskScore = num(sellerProps.riskScore);
+    const sellerTrades = num(sellerProps.totalTrades);
+    const floatFactor = num(txProps.floatFactor);
+    const watchers = num(txProps.watchers);
+    const listedAt = num(txProps.timestamp);
 
-    const signal = deriveSignal(spreadPct, events, stickers.length);
-    const riskScore = deriveRiskScore(events);
-    const confidenceScore = deriveConfidenceScore(spreadPct, events.length, riskScore);
-    const traderPath = buildTraderPath(events);
-    const eventTimeline = buildEventTimeline(events);
+    const eventTimeline: Opportunity["eventTimeline"] = [
+      {
+        title: `${marketplace ? nodeLabel(marketplace) : "CSFloat"} · listado a $${Math.round(currentAskUsd * 100) / 100}`,
+        description: `Vendedor ${seller ? nodeLabel(seller) : "anónimo"} · ${sellerTrades} trades verificables`,
+        timestamp: listedAt > 0 ? new Date(listedAt * 1000).toISOString() : undefined,
+      },
+      {
+        title: `Precio justo de mercado: $${Math.round(fairValueUsd * 100) / 100}`,
+        description: `Predicción del propio marketplace (base + factor de float ${floatFactor ? floatFactor.toFixed(3) : "n/d"})`,
+      },
+    ];
 
     return {
       id: `opp-${index}-${instance ? nodeId(instance) : "unknown"}`,
       skinId: skin ? nodeId(skin) : "",
       instanceId: instance ? nodeId(instance) : "",
       skinName: skin ? nodeLabel(skin) : "",
-      weapon: weaponNode || str(skin?.properties.weaponType) || "",
+      weapon: weapon ? nodeLabel(weapon) : "",
       rarity: str(skin?.properties.rarity) || "",
       wear: str(instance?.properties.wear) || "",
       float: num(instance?.properties.floatValue),
-      marketplace: latest && latest.marketplace ? nodeLabel(latest.marketplace as Node) : "",
+      marketplace: marketplace ? nodeLabel(marketplace) : "",
       currentAskUsd: Math.round(currentAskUsd * 100) / 100,
       fairValueUsd: Math.round(fairValueUsd * 100) / 100,
       spreadPct,
-      confidenceScore,
+      confidenceScore: deriveConfidenceScore(spreadPct, sellerTrades, riskScore),
       riskScore,
-      signal,
-      traderPath,
+      signal: deriveSignal(spreadPct, floatFactor, stickers.length, watchers, riskScore),
+      traderPath: seller ? [nodeLabel(seller)] : [],
       eventTimeline,
     };
   });
 }
 
-function computeTimeWindowHours(txs: Array<Record<string, unknown>>): number {
-  const timestamps = txs
-    .map((tx) => {
-      const node = tx as unknown as Node | undefined;
-      return num((node?.properties as Record<string, unknown>)?.timestamp);
-    })
-    .filter((t) => t > 0);
-
-  if (timestamps.length < 2) return 0;
-  const diffSeconds = Math.max(...timestamps) - Math.min(...timestamps);
-  return Math.round((diffSeconds / 3600) * 100) / 100;
-}
-
-function computeCycleRiskScore(traders: Array<Node>, txs: Array<Record<string, unknown>>): number {
-  let score = 50;
-
-  if (traders.length >= 3) {
-    score += 20;
-  }
-
-  const timestamps = txs
-    .map((tx) => {
-      const node = tx as unknown as Node | undefined;
-      return num((node?.properties as Record<string, unknown>)?.timestamp);
-    })
-    .filter((t) => t > 0);
-
-  if (timestamps.length >= 2) {
-    const hoursDiff = (Math.max(...timestamps) - Math.min(...timestamps)) / 3600;
-    if (hoursDiff <= 24) {
-      score += 15;
-    }
-  }
-
-  const traderIds = traders.map((t) => nodeId(t));
-  if (traderIds.length >= 2 && traderIds[0] === traderIds[traderIds.length - 1]) {
-    score += 10;
-  }
-
-  const prices = txs
-    .map((tx) => {
-      const node = tx as unknown as Node | undefined;
-      return num((node?.properties as Record<string, unknown>)?.priceUsd);
-    })
-    .filter((p) => p > 0);
-
-  if (prices.length >= 2) {
-    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-    const variance = prices.reduce((sum, p) => sum + Math.pow(p - avg, 2), 0) / prices.length;
-    const cv = avg > 0 ? Math.sqrt(variance) / avg : 0;
-    if (cv > 0.3) {
-      score += 5;
-    }
-  }
-
-  return Math.min(score, 100);
-}
-
 function computeSeverity(riskScore: number): RiskCycle["severity"] {
-  if (riskScore >= 90) return "CRITICAL";
-  if (riskScore >= 75) return "HIGH";
-  if (riskScore >= 60) return "MEDIUM";
+  if (riskScore >= 80) return "CRITICAL";
+  if (riskScore >= 65) return "HIGH";
+  if (riskScore >= 50) return "MEDIUM";
   return "LOW";
 }
 
-export function mapRiskCycles(records: Neo4jRecord[], minRiskScore: number = 60): RiskCycle[] {
+/* Ciclos detectados por grafo: la cadena de dueños de una pieza vuelve sobre un
+   trader anterior. La detección es Cypher real; el historial de ventas que la
+   alimenta es simulado (el real es privado) y está marcado como tal. */
+export function mapRiskCycles(records: Neo4jRecord[], minRiskScore: number = 40): RiskCycle[] {
   return records
     .map((record, index) => {
-      const instance = record.get("instance") as Node | null;
-      const skin = record.get("skin") as Node | null;
-      const traders = (record.get("traders") as Array<Node>) || [];
-      const txs = (record.get("txs") as Array<Record<string, unknown>>) || [];
+      const instance = record.get("instance") as Node;
+      const skin = record.get("skin") as Node;
+      const hops = (record.get("hops") as Array<Record<string, unknown>>) || [];
       const valueMovedUsd = Math.round(num(record.get("valueMovedUsd")) * 100) / 100;
 
-      const riskScore = computeCycleRiskScore(traders, txs);
-      const severity = computeSeverity(riskScore);
-      const timeWindowHours = computeTimeWindowHours(txs);
+      // ruta de dueños en orden: vendedor inicial + cada comprador
+      const traderPath: string[] = [];
+      for (const [i, hop] of hops.entries()) {
+        if (i === 0 && hop.sellerName) traderPath.push(str(hop.sellerName));
+        if (hop.buyerName) traderPath.push(str(hop.buyerName));
+      }
 
-      const traderPath = traders.map((t) => nodeLabel(t));
+      const timestamps = hops.map((h) => num(h.timestamp)).filter((t) => t > 0);
+      const timeWindowHours = timestamps.length >= 2
+        ? Math.round(((Math.max(...timestamps) - Math.min(...timestamps)) / 3600) * 10) / 10
+        : 0;
+
+      const prices = hops.map((h) => num(h.priceUsd)).filter((p) => p > 0);
+      const escalationPct = prices.length >= 2 && prices[0] > 0
+        ? Math.round(((prices[prices.length - 1] - prices[0]) / prices[0]) * 100)
+        : 0;
+      const revisits = traderPath.length !== new Set(traderPath).size;
+
+      let riskScore = 55;
+      if (revisits) riskScore += 15;
+      if (timeWindowHours > 0 && timeWindowHours <= 72) riskScore += 15;
+      if (escalationPct >= 40) riskScore += 10;
+      if (traderPath.length >= 4) riskScore += 5;
+      riskScore = Math.min(100, riskScore);
 
       const evidence = [
-        { title: "Traders involucrados", description: `${traders.length} traders conectados en el ciclo` },
-        { title: "Transacciones", description: `${txs.length} transacciones detectadas` },
-        { title: "Valor movido", description: `$${valueMovedUsd} USD en total` },
-        { title: "Instancia repetida", description: `La instancia ${instance ? nodeLabel(instance) : "desconocida"} aparece en múltiples transacciones` },
+        {
+          title: "Ruta circular",
+          description: revisits
+            ? `La pieza vuelve a un dueño anterior: ${traderPath.join(" → ")}`
+            : `Cadena de ${hops.length} ventas entre ${new Set(traderPath).size} traders`,
+        },
+        {
+          title: "Ventana temporal",
+          description: timeWindowHours <= 72
+            ? `Todo el recorrido ocurre en ${timeWindowHours} h — velocidad atípica`
+            : `Recorrido a lo largo de ${Math.round(timeWindowHours / 24)} días`,
+        },
+        {
+          title: "Evolución del precio",
+          description: `${escalationPct >= 0 ? "+" : ""}${escalationPct}% entre la primera y la última venta`,
+        },
+        {
+          title: "Origen del dato",
+          description: "Historial simulado para demo — la detección por grafo es genuina",
+        },
       ];
 
       return {
-        id: `cycle-${index}-${instance ? nodeId(instance) : "unknown"}`,
-        title: `Ciclo sospechoso · ${skin ? nodeLabel(skin) : "Skin desconocida"}`,
-        instanceId: instance ? nodeId(instance) : "",
-        skinName: skin ? nodeLabel(skin) : "",
+        id: `cycle-${index}-${nodeId(instance)}`,
+        title: `Ciclo sospechoso · ${nodeLabel(skin)}`,
+        instanceId: nodeId(instance),
+        skinName: nodeLabel(skin),
         traderPath,
         valueMovedUsd,
         timeWindowHours,
         riskScore,
-        severity,
+        severity: computeSeverity(riskScore),
         evidence,
       };
     })
@@ -519,15 +418,16 @@ export function mapTraders(records: Neo4jRecord[]): TraderSummary[] {
     const trader = record.get("trader") as Node;
     const volumeUsd = Math.round(num(record.get("volumeUsd")) * 100) / 100;
     const transactionCount = num(record.get("transactionCount"));
-    const riskScore = num(trader.properties.riskScore) || Math.min(100, Math.round(transactionCount * 8));
+    // margen real: descuento promedio de sus listings vs precio predicho por el mercado
+    const avgEdge = record.keys.includes("avgEdgePct") ? record.get("avgEdgePct") : null;
 
     return {
       id: nodeId(trader),
       handle: str(trader.properties.handle) || nodeLabel(trader),
       transactionCount,
       volumeUsd,
-      avgMarginPct: Math.round(Math.min(24, Math.max(2, transactionCount * 1.7)) * 10) / 10,
-      riskScore,
+      avgMarginPct: avgEdge != null ? Math.round(num(avgEdge) * 10) / 10 : 0,
+      riskScore: num(trader.properties.riskScore),
       marketplaces: stringList(record.get("marketplaces")),
     };
   });
@@ -604,6 +504,20 @@ export function mapSkinDetail(records: Neo4jRecord[]): SkinDetailResponse | null
       })),
   }));
 
+  const rawVenues = record.keys.includes("venuePrices")
+    ? ((record.get("venuePrices") as Array<Record<string, unknown>>) ?? [])
+    : [];
+  const venuePrices = rawVenues
+    .filter((v) => v.priceUsd != null)
+    .map((v) => ({
+      marketplace: str(v.marketplace),
+      wear: str(v.wear),
+      priceUsd: num(v.priceUsd),
+      quantity: v.quantity != null ? num(v.quantity) : null,
+      observedAt: str(v.observedAt),
+    }))
+    .sort((a, b) => a.wear.localeCompare(b.wear) || a.priceUsd - b.priceUsd);
+
   const skinDetail: SkinDetail = {
     id: str(skin.properties.id),
     name: str(skin.properties.name),
@@ -612,6 +526,7 @@ export function mapSkinDetail(records: Neo4jRecord[]): SkinDetailResponse | null
     rarity: str(skin.properties.rarity),
     imageUrl: str(skin.properties.imageUrl ?? ""),
     instances,
+    venuePrices,
   };
 
   return { skin: skinDetail, journey: [], currentSeller: null };

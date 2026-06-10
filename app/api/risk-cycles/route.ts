@@ -6,7 +6,7 @@ import { riskCyclesQuery } from "@/lib/queries";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const minRiskScoreResult = parseNumberParam(searchParams, "minRiskScore", 60);
+  const minRiskScoreResult = parseNumberParam(searchParams, "minRiskScore", 40);
   const timeWindowResult = parseNumberParam(searchParams, "timeWindowHours", 0);
   const marketplacesResult = parseMarketplaces(searchParams);
   const severityResult = parseSeverity(searchParams);

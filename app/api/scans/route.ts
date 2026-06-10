@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       startedAt: now,
       completedAt: now,
       opportunitiesFound: mapOpportunities(opportunityResult.records).length,
-      riskCyclesFound: mapRiskCycles(cycleResult.records, 60).length,
+      riskCyclesFound: mapRiskCycles(cycleResult.records, 40).length,
       marketplacesScanned: marketplacesResult.value,
     });
 

@@ -20,7 +20,7 @@ const severityLabel: Record<string, string> = {
 };
 
 export default async function HomePage() {
-  const { metrics, opportunities, riskCycles, traders, pulse, graphCounts, networkGraph, featuredTrader, skinImages } = await getHomeData();
+  const { metrics, opportunities, riskCycles, traders, pulse, graphCounts, networkGraph, featuredTrader, skinImages, crossVenue, featuredPiece } = await getHomeData();
   const topOpps = opportunities.slice(0, 4);
   const topCycles = riskCycles.slice(0, 4);
   const topTraders = traders.slice(0, 4);
@@ -93,7 +93,11 @@ export default async function HomePage() {
       </section>
 
       {/* ===== 02 · SEÑALES DE MERCADO ===== */}
-      <SignalsSection />
+      <SignalsSection
+        crossVenue={crossVenue}
+        avgSpreadPct={pulse && Number.isFinite(pulse.averageSpreadPct) ? pulse.averageSpreadPct : null}
+        dealsDetected={pulse ? pulse.dealsDetected : null}
+      />
 
       {/* ===== 03 · RELACIONES ===== */}
       <section className="section section--graph reveal" id="relaciones">
@@ -130,8 +134,9 @@ export default async function HomePage() {
               El radar las marca para revisión.
             </h2>
             <p className="section__dek section__dek--inv">
-              No acusamos. Señalamos. Cuando una skin reaparece, cuando un comprador y un trader cierran un círculo,
-              cuando un precio se mueve fuera del rango razonable, lo dejamos marcado para que un humano lo lea.
+              No acusamos. Señalamos. Cuando una pieza vuelve a un dueño anterior en una ventana corta y con el
+              precio inflado, el grafo lo encuentra solo. La detección por Cypher es genuina; el historial de ventas
+              que la alimenta es <u>simulado</u> (el real es privado) y está marcado como tal en la base.
             </p>
           </div>
         </header>
@@ -181,7 +186,6 @@ export default async function HomePage() {
                 <circle cx="100" cy="140" r="5" fill="#EE2E2E" />
               </svg>,
             ];
-            const pathPreview = cycle.traderPath.slice(0, 3).join(' → ') + (cycle.traderPath.length > 3 ? ' → …' : '');
             return (
               <article className="risk" key={cycle.id}>
                 <header className="risk__head">
@@ -191,11 +195,11 @@ export default async function HomePage() {
                 <div className="risk__viz">{vizzes[i % vizzes.length]}</div>
                 <h3 className="risk__title">{cycle.skinName}</h3>
                 <p className="risk__copy">
-                  {cycle.evidence[0]?.description ?? `Ruta circular detectada: ${pathPreview}. La instancia vuelve sobre traders ya visitados.`}
+                  {cycle.evidence[0]?.description ?? 'Ruta circular detectada en la cadena de dueños.'}
                 </p>
                 <dl className="risk__data">
-                  <div><dt>Traders</dt><dd>{cycle.traderPath.length}</dd></div>
-                  <div><dt>Ventana</dt><dd>{cycle.timeWindowHours} h</dd></div>
+                  <div><dt>Traders</dt><dd>{new Set(cycle.traderPath).size}</dd></div>
+                  <div><dt>Ventana</dt><dd>{Math.round(cycle.timeWindowHours)} h</dd></div>
                   <div><dt>Movido</dt><dd className="num--up">{fmtUsd(cycle.valueMovedUsd)}</dd></div>
                 </dl>
               </article>
@@ -274,35 +278,45 @@ export default async function HomePage() {
         </header>
 
         <div className="dissection">
-          <figure className="dissection__plate">
-            <header className="plate__head">
-              <span className="plate__label mono">Ficha · INST-#8821-471</span>
-              <span className="plate__live mono"><span className="dot dot--live" />Observada</span>
-            </header>
-            <div className="plate__art plate__art--exploded">
-              <Image src="/exploded.jpg" alt="Vista expandida del rifle AK-47 Strike Voltaic" fill style={{ objectFit: 'contain', objectPosition: 'center' }} />
-              <span className="plate__crop plate__crop--tl" />
-              <span className="plate__crop plate__crop--tr" />
-              <span className="plate__crop plate__crop--bl" />
-              <span className="plate__crop plate__crop--br" />
-            </div>
-            <figcaption className="plate__cap mono">AK-47 │ Voltaic · FN 0.018 · 4× sticker</figcaption>
-            <dl className="plate__data">
-              <div><dt>Float</dt><dd>0,0184</dd></div>
-              <div><dt>Paint seed</dt><dd>738</dd></div>
-              <div><dt>Tradeable</dt><dd>Sí</dd></div>
-              <div><dt>Última venta</dt><dd>$1.789</dd></div>
-            </dl>
-          </figure>
+          {featuredPiece && (
+            <figure className="dissection__plate">
+              <header className="plate__head">
+                <span className="plate__label mono">Ficha · {featuredPiece.assetId ? `#${featuredPiece.assetId.slice(-9)}` : featuredPiece.instanceId.slice(-9)}</span>
+                <span className="plate__live mono"><span className="dot dot--live" />Listada en CSFloat</span>
+              </header>
+              <div className="plate__art plate__art--exploded">
+                <Image
+                  src={featuredPiece.imageUrl}
+                  alt={`${featuredPiece.skinName} — pieza real listada en CSFloat`}
+                  fill
+                  style={{ objectFit: 'contain', objectPosition: 'center', padding: '8%' }}
+                />
+                <span className="plate__crop plate__crop--tl" />
+                <span className="plate__crop plate__crop--tr" />
+                <span className="plate__crop plate__crop--bl" />
+                <span className="plate__crop plate__crop--br" />
+              </div>
+              <figcaption className="plate__cap mono">
+                {featuredPiece.skinName} · {featuredPiece.wear} {featuredPiece.floatValue.toFixed(4)}
+                {featuredPiece.stickerCount > 0 ? ` · ${featuredPiece.stickerCount}× sticker` : ''}
+              </figcaption>
+              <dl className="plate__data">
+                <div><dt>Float</dt><dd>{featuredPiece.floatValue.toFixed(4).replace('.', ',')}</dd></div>
+                <div><dt>Paint seed</dt><dd>{featuredPiece.paintSeed ?? '—'}</dd></div>
+                <div><dt>Vendedor</dt><dd>{featuredPiece.sellerName}</dd></div>
+                <div><dt>Precio pedido</dt><dd>{fmtUsd(featuredPiece.priceUsd)}</dd></div>
+              </dl>
+            </figure>
+          )}
 
           <ol className="layers">
             {([
               ['L/01', 'Skin base', 'Modelo, rareza y exterior. La capa más conocida y la menos informativa por sí sola.'],
-              ['L/02', 'Instancia concreta', 'Un identificador único. Hace que dos AK-47 Voltaic FN no sean nunca la misma cosa.'],
+              ['L/02', 'Instancia concreta', 'Un identificador único. Hace que dos piezas de la misma skin y el mismo wear nunca sean la misma cosa.'],
               ['L/03', 'Float', 'El desgaste exacto. Donde el premium empieza a tener cuerpo medible.'],
               ['L/04', 'Stickers', 'Edición, posición, condición. El valor agregado real rara vez coincide con el teórico.'],
               ['L/05', 'Historial', 'Cada listado, cada bajada, cada cambio de manos. La memoria de la pieza.'],
-              ['L/06', 'Marketplace', 'CSFloat, BUFF163, Skinport. Cada venue tiene su tempo y su sesgo.'],
+              ['L/06', 'Marketplace', 'CSFloat, Skinport, Market.CSGO, Steam. Cada venue tiene su tempo y su sesgo.'],
               ['L/07', 'Comprador', 'Quién la compra es, muchas veces, más relevante que cuánto pagó.'],
               ['L/08', 'Ruta de transacciones', 'El recorrido completo desde el primer listado. Las rutas dejan huella.'],
               ['L/09', 'Riesgo', 'Una lectura compuesta. Resume todo lo anterior en una sola señal.'],

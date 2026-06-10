@@ -1,8 +1,15 @@
 'use client';
 import { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
+import type { CrossVenueRow } from '@/lib/home-data';
 
 const ease = [0.2, 0.7, 0.2, 1] as const;
+
+/* Venues reales del dataset (en este orden en la tabla). */
+const VENUE_COLUMNS = ['Skinport', 'Market.CSGO', 'Steam Market'] as const;
+
+const fmtPrice = (v: number | undefined) =>
+  v == null ? '—' : `$${v.toLocaleString('es-AR', { maximumFractionDigits: v < 10 ? 2 : 0 })}`;
 
 /* ── Animated sparkline ────────────────────────────────── */
 function Sparkline({ points, soft, active }: { points: string; soft?: boolean; active: boolean }) {
@@ -71,9 +78,9 @@ function FloatBar() {
 /* ── Venue bars ────────────────────────────────────────── */
 function VenueBars({ active }: { active: boolean }) {
   const venues = [
-    { name: 'CSFLOAT', w: 82, red: false },
-    { name: 'BUFF163', w: 94, red: true },
-    { name: 'SKINPORT', w: 71, red: false },
+    { name: 'SKINPORT', w: 82, red: false },
+    { name: 'MKT.CSGO', w: 94, red: true },
+    { name: 'STEAM', w: 71, red: false },
   ];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -128,38 +135,48 @@ type VizDef =
 
 interface SignalDef { id: string; title: string; copy: string; viz: VizDef }
 
-const SIGNALS: SignalDef[] = [
-  {
-    id: 'S/01', title: 'Spreads entre marketplaces',
-    copy: 'Diferencia ajustada por fees entre el mejor precio listado y el mejor de compra en cada venue.',
-    viz: { type: 'spark', points: '0,28 14,24 28,30 42,18 56,22 70,12 84,17 98,9 112,14 126,7 140,11 154,5 168,8 182,4 200,6', metric: 'Δ promedio', delta: '+11,8%' },
-  },
-  {
-    id: 'S/02', title: 'Outliers bajo la mediana',
-    copy: 'Listados desviados de la mediana ponderada. Filtramos urgencia de señal real.',
-    viz: { type: 'dist', bars: [{ h:.25 },{ h:.45 },{ h:.7 },{ h:.95, red:true },{ h:.62 },{ h:.4 },{ h:.22 }], metric: 'Outliers hoy', delta: '182' },
-  },
-  {
-    id: 'S/03', title: 'Premium por float',
-    copy: 'Sobreprecio por floats raros sobre el rango de referencia. Anticipa movimiento.',
-    viz: { type: 'float', metric: 'Float top 1%', delta: '+34,2×' },
-  },
-  {
-    id: 'S/04', title: 'Premium por stickers',
-    copy: 'Diferencia entre el valor teórico de stickers y lo que paga el comprador final.',
-    viz: { type: 'stickers', metric: 'Capture rate', delta: '61%' },
-  },
-  {
-    id: 'S/05', title: 'Cambios de liquidez',
-    copy: 'Tiempo para liquidar a precio mediano. Los aceleramientos anticipan movimientos de precio.',
-    viz: { type: 'spark', soft: true, points: '0,18 20,20 40,16 60,22 80,18 100,24 120,28 140,18 160,12 180,6 200,4', metric: 'Tiempo medio', delta: '−18%' },
-  },
-  {
-    id: 'S/06', title: 'Diferencias entre venues',
-    copy: 'CSFloat, BUFF163 y Skinport nunca se mueven al mismo ritmo. El desfase es la oportunidad.',
-    viz: { type: 'venues' },
-  },
-];
+/* Métricas reales (vienen de Neo4j vía props); el resto de las tarjetas
+   describe la señal sin inventar números. */
+function buildSignals(avgSpreadPct: number | null, dealsDetected: number | null): SignalDef[] {
+  return [
+    {
+      id: 'S/01', title: 'Spreads entre marketplaces',
+      copy: 'Diferencia entre el precio de la misma skin+wear en Skinport, Market.CSGO y Steam. Medida sobre snapshots reales.',
+      viz: {
+        type: 'spark', points: '0,28 14,24 28,30 42,18 56,22 70,12 84,17 98,9 112,14 126,7 140,11 154,5 168,8 182,4 200,6',
+        metric: 'Δ promedio', delta: avgSpreadPct != null ? `+${avgSpreadPct.toFixed(1).replace('.', ',')}%` : '—',
+      },
+    },
+    {
+      id: 'S/02', title: 'Spreads accionables',
+      copy: 'Pares skin+wear cuya diferencia entre venues supera el 5%: el costo de moverla de un mercado a otro.',
+      viz: {
+        type: 'dist', bars: [{ h:.25 },{ h:.45 },{ h:.7 },{ h:.95, red:true },{ h:.62 },{ h:.4 },{ h:.22 }],
+        metric: 'Detectados hoy', delta: dealsDetected != null ? String(dealsDetected) : '—',
+      },
+    },
+    {
+      id: 'S/03', title: 'Premium por float',
+      copy: 'CSFloat publica el factor de float de cada listing real: cuánto paga el mercado por el desgaste exacto.',
+      viz: { type: 'float', metric: 'Fuente', delta: 'float real' },
+    },
+    {
+      id: 'S/04', title: 'Premium por stickers',
+      copy: 'Cada listing real trae sus stickers con precio de mercado observado, no valor teórico.',
+      viz: { type: 'stickers', metric: 'Fuente', delta: 'SCM real' },
+    },
+    {
+      id: 'S/05', title: 'Profundidad de mercado',
+      copy: 'Unidades listadas por skin y wear en cada venue. La liquidez real, no estimada.',
+      viz: { type: 'spark', soft: true, points: '0,18 20,20 40,16 60,22 80,18 100,24 120,28 140,18 160,12 180,6 200,4', metric: 'Fuente', delta: 'quantity real' },
+    },
+    {
+      id: 'S/06', title: 'Diferencias entre venues',
+      copy: 'Skinport, Market.CSGO y Steam nunca se mueven al mismo ritmo. El desfase es la oportunidad.',
+      viz: { type: 'venues' },
+    },
+  ];
+}
 
 function SignalViz({ viz, active }: { viz: VizDef; active: boolean }) {
   if (viz.type === 'spark') return (
@@ -205,18 +222,14 @@ function SignalViz({ viz, active }: { viz: VizDef; active: boolean }) {
   );
 }
 
-/* ── Last updated counter ──────────────────────────────── */
-function LastUpdated() {
-  const [s, setS] = useState(38);
-  useEffect(() => {
-    const id = setInterval(() => setS(p => p >= 119 ? 12 : p + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return <span>hace {s} s</span>;
-}
-
 /* ── Main component ────────────────────────────────────── */
-export default function SignalsSection() {
+type SignalsSectionProps = {
+  crossVenue?: CrossVenueRow[];
+  avgSpreadPct?: number | null;
+  dealsDetected?: number | null;
+};
+
+export default function SignalsSection({ crossVenue = [], avgSpreadPct = null, dealsDetected = null }: SignalsSectionProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -277,6 +290,7 @@ export default function SignalsSection() {
   }, []);
 
   const allDone = visitedSet.size === 6;
+  const SIGNALS_LIVE = buildSignals(avgSpreadPct, dealsDetected);
 
   return (
     <>
@@ -310,7 +324,7 @@ export default function SignalsSection() {
 
           {/* 2×3 / 3×2 signal grid */}
           <ol className="signals-grid">
-            {SIGNALS.map((s, i) => {
+            {SIGNALS_LIVE.map((s, i) => {
               const active = activeIdx === i;
               const visited = visitedSet.has(i) && !active;
               return (
@@ -377,7 +391,7 @@ export default function SignalsSection() {
 
           {/* Progress indicator — visible only in sticky desktop mode */}
           <div className="signals-progress">
-            {SIGNALS.map((s, i) => {
+            {SIGNALS_LIVE.map((s, i) => {
               const active = activeIdx === i;
               const visited = visitedSet.has(i);
               return (
@@ -398,54 +412,53 @@ export default function SignalsSection() {
         </section>
       </div>
 
-      {/* Spread report table — appears after the sticky section exits */}
-      <div style={{ padding: '0 var(--pad)', background: 'var(--paper)' }}>
-        <div className="report" ref={tableRef} style={{ maxWidth: 'var(--maxw)', margin: '48px auto 0' }}>
-          <div className="report__head">
-            <span className="mono mono--muted">Reporte 04·12 · Spreads entre marketplaces</span>
-            <span className="mono mono--muted">Actualizado <LastUpdated /></span>
+      {/* Spread report table — precios reales observados en cada venue */}
+      {crossVenue.length > 0 && (
+        <div style={{ padding: '0 var(--pad)', background: 'var(--paper)' }}>
+          <div className="report" ref={tableRef} style={{ maxWidth: 'var(--maxw)', margin: '48px auto 0' }}>
+            <div className="report__head">
+              <span className="mono mono--muted">Reporte · Spreads reales entre marketplaces</span>
+              <span className="mono mono--muted">Skinport · Market.CSGO · Steam — datos en vivo</span>
+            </div>
+            <table className="report__table" aria-label="Spreads entre marketplaces">
+              <thead>
+                <tr>
+                  <th>Skin</th><th>Wear</th>
+                  {VENUE_COLUMNS.map((v) => <th className="num" key={v}>{v.replace(' Market', '')}</th>)}
+                  <th className="num">Spread</th><th>Señal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {crossVenue.slice(0, 6).map((row, i) => {
+                  const up = row.spreadPct >= 10;
+                  const tag = row.spreadPct >= 10 ? 'Spread amplio' : row.spreadPct >= 5 ? 'Spread moderado' : 'Estable';
+                  return (
+                    <motion.tr
+                      key={`${row.skinName}-${row.wear}`}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={tableInView ? { opacity: 1, x: 0 } : {}}
+                      transition={{ delay: 0.1 + i * 0.06, duration: 0.45, ease }}
+                      style={{ position: 'relative' }}
+                    >
+                      <td>{row.skinName}</td>
+                      <td className="mono">{row.wear}</td>
+                      {VENUE_COLUMNS.map((v) => (
+                        <td className="num" key={v}>{fmtPrice(row.prices[v])}</td>
+                      ))}
+                      <td className={`num${up ? ' num--up' : ''}`}>+{row.spreadPct.toFixed(1).replace('.', ',')}%</td>
+                      <td>
+                        <span className={`tag${up ? ' tag--red' : row.spreadPct >= 5 ? ' tag--soft' : ''}`}>
+                          {tag}
+                        </span>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <table className="report__table" aria-label="Spreads entre marketplaces">
-            <thead>
-              <tr>
-                <th>Skin</th><th>Wear</th>
-                <th className="num">CSFloat</th><th className="num">BUFF163</th><th className="num">Skinport</th>
-                <th className="num">Spread</th><th>Señal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { skin: 'AK-47 │ Voltaic',       wear: 'FN 0.018', csf: '$1.842', buf: '$1.610', skp: '$1.789', spread: '+14,4%', up: true,  tag: 'Spread amplio', rc: true,  rs: false },
-                { skin: 'M4A1-S │ Printstream',  wear: 'MW 0.094', csf: '$612',   buf: '$598',   skp: '$641',   spread: '+7,2%',  up: false, tag: 'Estable',       rc: false, rs: false },
-                { skin: 'AWP │ Wildfire',         wear: 'FT 0.221', csf: '$284',   buf: '$249',   skp: '$271',   spread: '+14,1%', up: true,  tag: 'Spread amplio', rc: true,  rs: false },
-                { skin: 'Glock-18 │ Fade',        wear: 'FN 0.006', csf: '$1.120', buf: '$1.180', skp: '$1.144', spread: '+5,3%',  up: false, tag: 'Float premium', rc: false, rs: true  },
-                { skin: 'USP-S │ Kill Confirmed', wear: 'FT 0.182', csf: '$402',   buf: '$380',   skp: '$418',   spread: '+10,0%', up: false, tag: 'Liquidez baja', rc: false, rs: false },
-                { skin: 'Karambit │ Doppler P2',  wear: 'FN 0.012', csf: '$2.940', buf: '$2.610', skp: '$2.802', spread: '+12,6%', up: true,  tag: 'Reaparición',   rc: true,  rs: false },
-              ].map((row, i) => (
-                <motion.tr
-                  key={row.skin}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={tableInView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: 0.1 + i * 0.06, duration: 0.45, ease }}
-                  style={{ position: 'relative' }}
-                >
-                  <td>{row.skin}</td>
-                  <td className="mono">{row.wear}</td>
-                  <td className="num">{row.csf}</td>
-                  <td className="num">{row.buf}</td>
-                  <td className="num">{row.skp}</td>
-                  <td className={`num${row.up ? ' num--up' : ''}`}>{row.spread}</td>
-                  <td>
-                    <span className={`tag${row.rc ? ' tag--red' : row.rs ? ' tag--soft' : ''}`}>
-                      {row.tag}
-                    </span>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
         </div>
-      </div>
+      )}
     </>
   );
 }

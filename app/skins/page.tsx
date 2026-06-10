@@ -171,8 +171,19 @@ export default function SkinsPage() {
   const [sort, setSort] = useState("recent");
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [totalCount] = useState(3335);
+  const [totalCount, setTotalCount] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // total real de skins indexadas en Neo4j
+  useEffect(() => {
+    fetch("/api/metrics")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((m: { skinsIndexed?: number } | null) => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (m?.skinsIndexed) setTotalCount(m.skinsIndexed);
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchSkins = useCallback(async (
     q: string, w: string, r: string, p: number, append = false

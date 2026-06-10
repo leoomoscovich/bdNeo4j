@@ -1,13 +1,14 @@
 export type WorkspaceId =
   | "dashboard"
   | "market-radar"
+  | "patterns"
   | "risk-cycles"
   | "graph-explorer"
   | "traders"
   | "watchlist"
   | "compare";
 
-export type MarketplaceId = "CSFloat" | "BUFF163" | "Skinport";
+export type MarketplaceId = "CSFloat" | "Skinport" | "Market.CSGO" | "Steam Market";
 
 export type SignalFilter =
   | "ALL"
@@ -33,7 +34,7 @@ export type GraphTarget =
   | { type: "marketplace"; marketplaceId: string; label: string }
   | { type: "skin"; skinId: string; label: string };
 
-export const marketplaceIds: MarketplaceId[] = ["CSFloat", "BUFF163", "Skinport"];
+export const marketplaceIds: MarketplaceId[] = ["CSFloat", "Skinport", "Market.CSGO", "Steam Market"];
 
 export const defaultFilters: AppFilters = {
   query: "",

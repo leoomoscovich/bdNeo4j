@@ -9,6 +9,7 @@ import { CompareWorkspace } from "@/components/CompareWorkspace";
 import { GraphInsightPanel } from "@/components/GraphInsightPanel";
 import { MarketPulseCards } from "@/components/MarketPulseCards";
 import { OpportunityFeed } from "@/components/OpportunityFeed";
+import { PatternsWorkspace } from "@/components/PatternsWorkspace";
 import { RiskCyclesPanel } from "@/components/RiskCyclesPanel";
 import { SelectedAssetDrawer } from "@/components/SelectedAssetDrawer";
 import { TraderWorkspace } from "@/components/TraderWorkspace";
@@ -35,6 +36,21 @@ export default function DashboardPage() {
       .then((res) => res.ok ? res.json() : null)
       .then((payload: ScanSummary | null) => setScan(payload))
       .catch(() => setScan(null));
+  }, []);
+
+  // Grafo por defecto: sin selección, el explorador muestra el vecindario
+  // del trader con más volumen en vez de un estado vacío.
+  useEffect(() => {
+    if (graphTarget) return;
+    fetch("/api/traders")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((traders: Array<{ id: string; handle: string }>) => {
+        if (traders[0]) {
+          setGraphTarget((current) => current ?? { type: "trader", traderId: traders[0].id, label: traders[0].handle });
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function updateFilters(patch: Partial<AppFilters>) {
@@ -183,8 +199,8 @@ export default function DashboardPage() {
             <section className="panel">
               <div className="panel-header">
                 <div>
-                  <h2>Ciclos de riesgo</h2>
-                  <p>Rutas circulares y transferencias sospechosas detectadas por Neo4j.</p>
+                  <h2>Vendedores de riesgo</h2>
+                  <p>Señales reales: sin historial verificado, trades fallidos o perfil oculto.</p>
                 </div>
               </div>
               <div className="compact-panel-body">
@@ -199,13 +215,24 @@ export default function DashboardPage() {
         </section>
       )}
 
+      {activeWorkspace === "patterns" && (
+        <section style={{ marginTop: 16 }}>
+          <PatternsWorkspace
+            onOpenGraph={(target) => {
+              setGraphTarget(target);
+              setActiveWorkspace("graph-explorer");
+            }}
+          />
+        </section>
+      )}
+
       {activeWorkspace === "risk-cycles" && (
         <section className="workspace">
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Risk Cycles</h2>
-                <p>Repeated routes, abnormal prices and circular ownership paths.</p>
+                <h2>Vendedores de riesgo</h2>
+                <p>Vendedores reales con señales de riesgo observables, ordenados por exposición.</p>
               </div>
             </div>
             <div style={{ padding: 18 }}>

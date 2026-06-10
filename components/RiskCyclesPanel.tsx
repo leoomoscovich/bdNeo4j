@@ -105,10 +105,18 @@ export function RiskCyclesPanel({ selectedId, filters, onSelect }: RiskCyclesPan
               <h3 className="text-[15px] font-semibold leading-snug text-[var(--text)]">
                 {cycle.title}
               </h3>
-              <span
-                className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${sev.bg} ${sev.text}`}
-              >
-                {cycle.severity}
+              <span className="flex shrink-0 items-center gap-1.5">
+                <span
+                  className="rounded-full border border-[var(--line)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--muted)]"
+                  title="La detección por grafo es real; el historial de ventas que la alimenta es simulado."
+                >
+                  Historial simulado
+                </span>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${sev.bg} ${sev.text}`}
+                >
+                  {cycle.severity}
+                </span>
               </span>
             </div>
 
