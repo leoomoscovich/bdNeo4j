@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { SkinCatalogItem } from "@/lib/types";
-import "./catalog.css";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 

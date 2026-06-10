@@ -100,16 +100,16 @@ export function SidebarNav({
       </div>
 
       <div className="sidebar-card">
-        <strong>{scanStatus === "running" ? "Deep scan running" : scan ? "Latest deep scan" : "Live scan ready"}</strong>
+        <strong>{scanStatus === "running" ? "Scan en progreso" : scan ? "Último scan" : "Scan disponible"}</strong>
         <p>
           {scanStatus === "error"
-            ? "The scan could not be completed. Check Neo4j and try again."
+            ? "No se pudo completar el scan. Verificá Neo4j e intentá de nuevo."
             : scan
-              ? `${scan.opportunitiesFound} opportunities and ${scan.riskCyclesFound} risk cycles across ${scan.marketplacesScanned.join(", ")}.`
-              : "Run a backend scan to refresh opportunities and suspicious routes."}
+              ? `${scan.opportunitiesFound} oportunidades y ${scan.riskCyclesFound} ciclos de riesgo en ${scan.marketplacesScanned.join(", ")}.`
+              : "Ejecutá un scan para actualizar oportunidades y rutas sospechosas."}
         </p>
         <button className="scan-button" onClick={onRunScan} disabled={scanStatus === "running"}>
-          {scanStatus === "running" ? <><Radar size={15} /> Scanning...</> : <><DatabaseZap size={15} /> Run deep scan</>}
+          {scanStatus === "running" ? <><Radar size={15} /> Escaneando…</> : <><DatabaseZap size={15} /> Ejecutar scan</>}
         </button>
       </div>
     </aside>

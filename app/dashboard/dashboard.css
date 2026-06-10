@@ -540,4 +540,21 @@
   .nav-label { display: none; }
   .sidebar-card { display: none; }
   .main { padding: 0 14px 32px; }
+  .radar-cols { grid-template-columns: 1fr; }
 }
+
+/* ── Radar: columnas de oportunidades/riesgo ─────────────── */
+.radar-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ── Anchos de columnas de tabla de oportunidades ───────── */
+.opp-skin  { width: 38%; }
+.opp-wear  { width: 11%; }
+.opp-signal { width: 12%; white-space: nowrap; }
+.opp-ask, .opp-fair { width: 9%; text-align: right; }
+.opp-spread { width: 9%; text-align: right; }
+.opp-confidence { width: 13%; }

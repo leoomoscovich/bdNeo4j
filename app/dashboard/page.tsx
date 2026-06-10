@@ -17,7 +17,6 @@ import { WatchlistWorkspace } from "@/components/WatchlistWorkspace";
 import { getCompareIds, setCompareIds, toggleWatchlistId } from "@/lib/local-preferences";
 import type { Opportunity, RiskCycle, ScanSummary } from "@/lib/types";
 import { defaultFilters, serializeMarketplaces, type AppFilters, type GraphTarget, type MarketplaceId, type SignalFilter, type WorkspaceId } from "@/lib/ui-state";
-import "./dashboard.css";
 
 export default function DashboardPage() {
   const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId>("market-radar");
@@ -158,8 +157,8 @@ export default function DashboardPage() {
           <div className="table-panel">
             <div className="panel-header">
               <div>
-                <h2>Dashboard</h2>
-                <p>Live market pulse and scan summary for the active marketplaces.</p>
+                <h2>Resumen</h2>
+                <p>Pulso del mercado en tiempo real para los marketplaces activos.</p>
               </div>
             </div>
             <div style={{ padding: 18 }}>
@@ -170,8 +169,8 @@ export default function DashboardPage() {
             <section className="panel">
               <div className="panel-header">
                 <div>
-                  <h2>Scan Status</h2>
-                  <p>{scan ? `${scan.opportunitiesFound} opportunities, ${scan.riskCyclesFound} risk cycles.` : "No scan has been run yet."}</p>
+                  <h2>Estado del scan</h2>
+                  <p>{scan ? `${scan.opportunitiesFound} oportunidades, ${scan.riskCyclesFound} ciclos de riesgo.` : "Sin scans ejecutados aún."}</p>
                 </div>
               </div>
             </section>
@@ -186,7 +185,7 @@ export default function DashboardPage() {
           <MarketPulseCards />
 
           {/* Dos columnas: oportunidades | ciclos de riesgo */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+          <div className="radar-cols">
             <OpportunityFeed
               selectedId={selectedOpportunity?.id}
               filters={filters}

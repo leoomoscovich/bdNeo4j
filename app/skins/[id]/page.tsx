@@ -3,12 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { Graph3D } from "@/components/Graph3D";
 import { SkinInspect3D } from "@/components/SkinInspect3D";
 import type { GraphResponse, SkinDetailResponse, JourneyStep, TraderReputation, InstanceSummary } from "@/lib/types";
-import "../catalog.css";
-import "./ficha.css";
 
 const RARITY_VAR: Record<string, string> = {
   Consumer:    "var(--r-consumer)",
@@ -273,16 +270,7 @@ export default function SkinDetailPage() {
           <div className={`ficha-plate__art${skin.imageUrl ? "" : " ficha-plate__art--empty"}`}>
             {skin.imageUrl ? (
               <>
-                <SkinInspect3D>
-                  <Image
-                    src={skin.imageUrl}
-                    alt={skin.name}
-                    fill
-                    sizes="(max-width: 1000px) 90vw, 480px"
-                    priority
-                    style={{ objectFit: "contain", padding: "8%" }}
-                  />
-                </SkinInspect3D>
+                <SkinInspect3D imageUrl={skin.imageUrl} alt={skin.name} />
                 <span className="ficha-plate__crop ficha-plate__crop--tl" />
                 <span className="ficha-plate__crop ficha-plate__crop--tr" />
                 <span className="ficha-plate__crop ficha-plate__crop--bl" />
