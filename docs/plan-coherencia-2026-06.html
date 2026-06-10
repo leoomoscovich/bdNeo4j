@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkinGraph Radar · Plan de coherencia · Junio 2026</title>
+<style>
+  :root {
+    --paper: #F4F1EA;
+    --paper-2: #ECE8DF;
+    --ink: #0B0B0C;
+    --ink-soft: #4a4a4e;
+    --red: #EE2E2E;
+    --red-dark: #B91C1C;
+    --hair: rgba(11,11,12,0.14);
+    --hair-2: rgba(11,11,12,0.07);
+    --dark: #0E0E10;
+    --dark-paper: #141416;
+    --ok: #1a8a4a;
+    --warn: #c77c0a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.55;
+  }
+  .mono { font-family: 'Courier New', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .mono--muted { color: var(--ink-soft); opacity: 0.75; }
+  .mono--red { color: var(--red); }
+
+  /* ===== masthead ===== */
+  .masthead {
+    border-bottom: 2px solid var(--ink);
+    padding: 14px 32px;
+    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;
+    position: sticky; top: 0; background: var(--paper); z-index: 50;
+  }
+  .dot-live { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-right:6px; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100% {opacity:1} 50% {opacity:.3} }
+
+  /* ===== layout ===== */
+  .section { padding: 72px 32px; max-width: 1240px; margin: 0 auto; border-bottom: 1px solid var(--hair); }
+  .grid { display: grid; grid-template-columns: 160px 1fr; gap: 32px; align-items: start; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .rail { position: sticky; top: 80px; }
+  .rail__num { display: block; font-family: 'Courier New', monospace; font-size: 40px; font-weight: bold; color: var(--red); line-height: 1; }
+  .rail__label { display: block; margin-top: 8px; font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); max-width: 130px; }
+
+  h1.statement { font-size: clamp(42px, 7vw, 84px); line-height: 1.02; font-weight: normal; letter-spacing: -0.02em; }
+  h1.statement em { font-style: italic; color: var(--red); }
+  h2.title { font-size: clamp(28px, 4vw, 44px); line-height: 1.1; font-weight: normal; letter-spacing: -0.01em; margin-bottom: 14px; }
+  h2.title em { font-style: italic; color: var(--red); }
+  .dek { font-size: 17px; color: var(--ink-soft); max-width: 64ch; margin-bottom: 8px; }
+
+  /* ===== verdict strip ===== */
+  .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--hair); margin-top: 40px; }
+  .verdict__cell { background: var(--paper); padding: 20px; }
+  .verdict__cell h3 { font-size: 15px; font-weight: bold; margin: 6px 0 4px; font-family: 'Courier New', monospace; letter-spacing: 0.04em; }
+  .verdict__cell p { font-size: 13.5px; color: var(--ink-soft); }
+  .tag { display: inline-block; font-family: 'Courier New', monospace; font-size: 10.5px; letter-spacing: 0.1em; padding: 2px 8px; border: 1px solid currentColor; }
+  .tag--good { color: var(--ok); }
+  .tag--bad { color: var(--red); }
+  .tag--broken { color: #fff; background: var(--red); border-color: var(--red); }
+  .tag--warn { color: var(--warn); }
+
+  /* ===== evidence cards ===== */
+  .evidence { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 36px; }
+  @media (max-width: 900px) { .evidence { grid-template-columns: 1fr; } }
+  .ev { border: 1px solid var(--hair); background: #fff; }
+  .ev--wide { grid-column: 1 / -1; }
+  .ev__head { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 14px; border-bottom: 1px solid var(--hair); }
+  .ev__img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--hair); background: #ddd; }
+  .ev__body { padding: 14px 16px 18px; }
+  .ev__body p { font-size: 14px; color: var(--ink-soft); }
+  .ev__body strong { color: var(--ink); }
+
+  .prio { font-family: 'Courier New', monospace; font-weight: bold; font-size: 12px; padding: 3px 9px; letter-spacing: 0.08em; }
+  .prio--p0 { background: var(--red); color: #fff; }
+  .prio--p1 { background: var(--ink); color: var(--paper); }
+  .prio--p2 { border: 1px solid var(--ink); color: var(--ink); }
+
+  /* ===== spine diagram ===== */
+  .spine { display: flex; align-items: stretch; gap: 0; margin-top: 40px; flex-wrap: wrap; }
+  .spine__step { flex: 1 1 200px; border: 1px solid var(--ink); padding: 18px 16px; position: relative; background: #fff; min-width: 200px; }
+  .spine__step + .spine__step { margin-left: -1px; }
+  .spine__step h4 { font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: 0.06em; margin: 8px 0 6px; }
+  .spine__step p { font-size: 13px; color: var(--ink-soft); }
+  .spine__arrow { position: absolute; right: -9px; top: 50%; transform: translateY(-50%); z-index: 2; background: var(--paper); color: var(--red); font-size: 16px; line-height: 1; }
+  .spine__state { margin-top: 10px; }
+
+  /* ===== dark section (3D) ===== */
+  .section--dark { background: var(--dark); color: #EDEAE2; max-width: none; border-bottom: none; }
+  .section--dark .inner { max-width: 1240px; margin: 0 auto; }
+  .section--dark .rail__label { color: rgba(237,234,226,0.55); }
+  .section--dark .dek { color: rgba(237,234,226,0.65); }
+  .threed { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.12); margin-top: 40px; }
+  .threed__card { background: var(--dark-paper); padding: 24px; }
+  .threed__card h3 { font-size: 19px; font-weight: normal; margin: 14px 0 8px; }
+  .threed__card h3 em { font-style: italic; color: var(--red); }
+  .threed__card p { font-size: 14px; color: rgba(237,234,226,0.6); }
+  .threed__card .mini { height: 150px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at center, rgba(238,46,46,0.08), transparent 70%); }
+  .chip { display:inline-block; font-family:'Courier New',monospace; font-size:10.5px; letter-spacing:.08em; padding:2px 8px; border:1px solid rgba(255,255,255,0.25); color: rgba(237,234,226,0.8); margin-right: 6px; margin-top: 12px; }
+  .chip--have { border-color: var(--ok); color: #4ade80; }
+
+  /* ===== roadmap ===== */
+  .phases { margin-top: 40px; }
+  .phase { display: grid; grid-template-columns: 110px 1fr; gap: 24px; padding: 26px 0; border-top: 1px solid var(--hair); }
+  @media (max-width: 700px) { .phase { grid-template-columns: 1fr; gap: 8px; } }
+  .phase__num { font-family: 'Courier New', monospace; font-size: 30px; font-weight: bold; color: var(--red); line-height: 1; }
+  .phase__num small { display: block; font-size: 11px; color: var(--ink-soft); font-weight: normal; margin-top: 6px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .phase h3 { font-size: 21px; font-weight: normal; margin-bottom: 6px; }
+  .phase ul { list-style: none; margin-top: 10px; }
+  .phase li { font-size: 14.5px; color: var(--ink-soft); padding: 7px 0 7px 22px; position: relative; border-top: 1px dashed var(--hair-2); }
+  .phase li::before { content: "→"; position: absolute; left: 0; color: var(--red); font-family: 'Courier New', monospace; }
+  .phase li strong { color: var(--ink); }
+  .phase__out { margin-top: 12px; font-size: 13.5px; padding: 10px 14px; background: var(--paper-2); border-left: 3px solid var(--red); color: var(--ink-soft); }
+
+  /* ===== fake data table ===== */
+  .fake-table { width: 100%; border-collapse: collapse; margin-top: 32px; font-size: 14px; }
+  .fake-table th { font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--ink); color: var(--ink-soft); }
+  .fake-table td { padding: 10px 12px; border-bottom: 1px solid var(--hair-2); vertical-align: top; }
+  .fake-table td.mono-cell { font-family: 'Courier New', monospace; font-size: 12.5px; }
+
+  /* ===== cleanup list ===== */
+  .cleanup { columns: 2; column-gap: 40px; margin-top: 28px; }
+  @media (max-width: 700px) { .cleanup { columns: 1; } }
+  .cleanup li { list-style: none; font-family: 'Courier New', monospace; font-size: 13px; padding: 8px 0 8px 24px; position: relative; break-inside: avoid; border-bottom: 1px dashed var(--hair-2); }
+  .cleanup li::before { content: "✕"; position: absolute; left: 2px; color: var(--red); font-weight: bold; }
+  .cleanup li small { display: block; font-family: Georgia, serif; color: var(--ink-soft); font-size: 12.5px; margin-top: 2px; }
+
+  /* ===== cierre ===== */
+  .cierre { text-align: center; padding: 90px 32px; }
+  .cierre h2 { font-size: clamp(30px, 5vw, 54px); font-weight: normal; line-height: 1.15; }
+  .cierre h2 em { font-style: italic; color: var(--red); }
+  .cierre .mono { margin-top: 24px; display: block; }
+
+  .foot { border-top: 2px solid var(--ink); padding: 16px 32px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ===== MASTHEAD ===== -->
+<header class="masthead">
+  <span class="mono"><strong>SG</strong> · SkinGraph Radar</span>
+  <span class="mono mono--muted">Plan de coherencia · Auditoría UI/UX + estrategia 3D</span>
+  <span class="mono"><span class="dot-live"></span>Junio 2026</span>
+</header>
+
+<!-- ===== 01 DIAGNOSTICO ===== -->
+<section class="section">
+  <div class="grid">
+    <div class="rail">
+      <span class="rail__num">01</span>
+      <span class="rail__label">Diagnóstico</span>
+    </div>
+    <div>
+      <h1 class="statement">Hoy son <em>tres productos</em><br>en un dominio.</h1>
+      <p class="dek" style="margin-top:24px">
+        La home editorial y el catálogo comparten una identidad visual fuerte y coherente
+        (papel crema, tinta negra, acento rojo, etiquetas mono). El dashboard vive en otro
+        lenguaje visual — y con bugs de layout. La ficha de skin llega a producción
+        <strong>sin CSS</strong>. El plan: un solo producto, una sola identidad, datos reales en todas partes.
+      </p>
+
+      <div class="verdict">
+        <div class="verdict__cell">
+          <span class="tag tag--good">Coherente</span>
+          <h3>/ (Home)</h3>
+          <p>Editorial, hero 3D-style con scroll, métricas reales de Neo4j. El estándar a seguir. Problema: el 80% del contenido es ficción hardcodeada.</p>
+        </div>
+        <div class="verdict__cell">
+          <span class="tag tag--good">Coherente</span>
+          <h3>/skins</h3>
+          <p>Catálogo alineado con la home: misma tipografía, mismos rails numerados, filtros funcionales contra la API real.</p>
+        </div>
+        <div class="verdict__cell">
+          <span class="tag tag--bad">Otro producto</span>
+          <h3>/dashboard</h3>
+          <p>"Command center" rojo claro con otra mezcla tipográfica. Columnas superpuestas, textos cortados, cards a medio renderizar.</p>
+        </div>
+        <div class="verdict__cell">
+          <span class="tag tag--broken">Roto en prod</span>
+          <h3>/skins/[id]</h3>
+          <p>HTML crudo, sin un solo estilo aplicado. Es la página que debería ser el corazón del producto.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 02 EVIDENCIA ===== -->
+<section class="section">
+  <div class="grid">
+    <div class="rail">
+      <span class="rail__num">02</span>
+      <span class="rail__label">Evidencia · capturas de producción</span>
+    </div>
+    <div>
+      <h2 class="title">Lo que ve un usuario <em>hoy</em> en cs2.lmstores.com.</h2>
+      <p class="dek">Capturas tomadas el 10 de junio de 2026 con Playwright (1440×900). Reproducible con <span class="mono" style="text-transform:none">scripts/ux-audit-shots.mjs</span>.</p>
+
+      <div class="evidence">
+        <article class="ev ev--wide">
+          <header class="ev__head">
+            <span class="mono">/skins/skin-ak-47-asiimov</span>
+            <span class="prio prio--p0">P0 · BUG CRÍTICO</span>
+          </header>
+          <img class="ev__img" src="../handoff/ux-audit/skin-detail.png" alt="Ficha de skin sin estilos en producción">
+          <div class="ev__body">
+            <p><strong>Cero CSS aplicado.</strong> La página usa clases de Tailwind (<code>bg-green-500/15</code>, etc.)
+            que no se generan/aplican en el build de producción. Times New Roman, sin layout, sin grafo visible.
+            Cada card del catálogo termina acá: es el embudo principal del producto, roto.</p>
+          </div>
+        </article>
+
+        <article class="ev ev--wide">
+          <header class="ev__head">
+            <span class="mono">/dashboard</span>
+            <span class="prio prio--p0">P0 · LAYOUT ROTO + IDENTIDAD AJENA</span>
+          </header>
+          <img class="ev__img" src="../handoff/ux-audit/dashboard.png" alt="Dashboard con columnas superpuestas y otra identidad visual">
+          <div class="ev__body">
+            <p>La columna <em>"Oportunidades de mercado"</em> se superpone con la tabla; los nombres de skins se cortan
+            a mitad de letra ("AWP | Asiimov" → "WP | Asiimov"); las cards de ciclos de riesgo renderizan medio desvanecidas;
+            la barra superior colisiona a 1440px. Además: <strong>otra paleta, otra tipografía, otro tono</strong> — no parece
+            la misma marca que la home.</p>
+          </div>
+        </article>
+
+        <article class="ev">
+          <header class="ev__head">
+            <span class="mono">/ · Hero</span>
+            <span class="tag tag--good">El estándar</span>
+          </header>
+          <img class="ev__img" src="../handoff/ux-audit/home-top.png" alt="Hero de la home con secuencia de armado">
+          <div class="ev__body">
+            <p>La secuencia de armado del AK con scroll es el mejor momento del sitio. Esta dirección visual
+            (render fotográfico + editorial) es la que el resto del producto tiene que heredar.</p>
+          </div>
+        </article>
+
+        <article class="ev">
+          <header class="ev__head">
+            <span class="mono">/ · Sección relaciones</span>
+            <span class="prio prio--p1">P1 · DATOS FICTICIOS</span>
+          </header>
+          <img class="ev__img" src="../handoff/ux-audit/home-low.png" alt="Grafo de compradores con datos inventados">
+          <div class="ev__body">
+            <p>Visual atractiva, pero <strong>todo es inventado</strong>: traders con ciudades que no existen en el modelo,
+            "412.918 piezas" cuando la base real tiene ~3.335 instancias. Para un producto de <em>inteligencia</em>,
+            la inteligencia ficticia es el peor mensaje posible.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 03 DATOS FALSOS ===== -->
+<section class="section">
+  <div class="grid">
+    <div class="rail">
+      <span class="rail__num">03</span>
+      <span class="rail__label">Datos: ficción → API real</span>
+    </div>
+    <div>
+      <h2 class="title">Cada número hardcodeado ya tiene <em>una API que lo reemplaza</em>.</h2>
+      <p class="dek">Hay 12 rutas de API funcionando contra Neo4j. La home no usa casi ninguna.</p>
+
+      <table class="fake-table">
+        <thead>
+          <tr><th>Elemento en la home</th><th>Hoy</th><th>Fuente real disponible</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Métricas de la declaración (sección 01)</td><td><span class="tag tag--good">Real</span></td><td class="mono-cell">/api/metrics ✓ ya conectado</td></tr>
+          <tr><td>Observatorio · 4 cards de piezas</td><td><span class="tag tag--bad">Hardcodeado</span></td><td class="mono-cell">/api/opportunities (top 4 por spread)</td></tr>
+          <tr><td>Cards de riesgo R/01 – R/04</td><td><span class="tag tag--bad">Hardcodeado</span></td><td class="mono-cell">/api/risk-cycles (4 ciclos reales)</td></tr>
+          <tr><td>Mesa de análisis · 6 tiles</td><td><span class="tag tag--bad">Hardcodeado</span></td><td class="mono-cell">/api/market-pulse + /api/traders + /api/opportunities</td></tr>
+          <tr><td>Globo de red · nodos y arcos</td><td><span class="tag tag--bad">Ficción geográfica</span></td><td class="mono-cell">Sin geografía en el modelo → reemplazar por grafo 3D real</td></tr>
+          <tr><td>"412.918 piezas" en el interludio</td><td><span class="tag tag--bad">Inventado</span></td><td class="mono-cell">/api/metrics → instancias reales (~3.335... y honesto)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 04 ESTRATEGIA 3D ===== -->
+<section class="section section--dark">
+  <div class="inner">
+    <div class="grid">
+      <div class="rail">
+        <span class="rail__num">04</span>
+        <span class="rail__label">Estrategia 3D</span>
+      </div>
+      <div>
+        <h2 class="title" style="color:#EDEAE2">El 3D que pide el proyecto <em>ya está instalado</em> — y sin usar.</h2>
+        <p class="dek"><span class="mono" style="text-transform:none">react-force-graph-3d</span> + <span class="mono" style="text-transform:none">three</span> están en package.json.
+        <span class="mono" style="text-transform:none">NetworkGraph.tsx</span> existe y nunca se importa. El único 3D vivo es el globo cobe con datos inventados.</p>
+
+        <div class="threed">
+          <article class="threed__card">
+            <div class="mini">
+              <svg viewBox="0 0 220 130" width="200">
+                <g stroke="rgba(255,255,255,0.25)" fill="none">
+                  <line x1="30" y1="90" x2="85" y2="45"/><line x1="85" y1="45" x2="150" y2="70"/>
+                  <line x1="150" y1="70" x2="190" y2="30"/><line x1="85" y1="45" x2="120" y2="110"/>
+                  <line x1="150" y1="70" x2="120" y2="110"/>
+                </g>
+                <g stroke="#EE2E2E" stroke-width="1.6" fill="none">
+                  <path d="M30 90 Q 75 120 120 110"/><path d="M120 110 Q 160 110 150 70 "/>
+                  <path d="M150 70 Q 80 60 30 90"/>
+                </g>
+                <circle cx="30" cy="90" r="7" fill="#EE2E2E"/><circle cx="85" cy="45" r="5" fill="#EDEAE2"/>
+                <circle cx="150" cy="70" r="6" fill="#EE2E2E"/><circle cx="190" cy="30" r="4" fill="#EDEAE2"/>
+                <circle cx="120" cy="110" r="5" fill="#EE2E2E"/>
+              </svg>
+            </div>
+            <h3>Grafo de fuerza 3D <em>con datos reales</em></h3>
+            <p>La pieza insignia. Traders, instancias, transacciones y marketplaces de Neo4j en un grafo 3D navegable.
+            Ciclos sospechosos pulsando en rojo, click para inspeccionar nodo. Va al Graph Explorer del dashboard,
+            a la ficha de skin (recorrido de la instancia) y como momento hero en la home.</p>
+            <span class="chip chip--have">✓ react-force-graph-3d instalado</span>
+            <span class="chip chip--have">✓ /api/graph existe</span>
+          </article>
+
+          <article class="threed__card">
+            <div class="mini">
+              <svg viewBox="0 0 220 130" width="200">
+                <ellipse cx="110" cy="100" rx="70" ry="12" fill="none" stroke="rgba(255,255,255,0.2)" stroke-dasharray="3 4"/>
+                <rect x="60" y="40" width="100" height="28" rx="3" fill="none" stroke="#EDEAE2" stroke-width="1.4" transform="rotate(-8 110 54)"/>
+                <rect x="68" y="46" width="40" height="10" rx="1" fill="#EE2E2E" transform="rotate(-8 110 54)"/>
+                <path d="M40 105 a70 12 0 0 1 140 0" fill="none" stroke="#EE2E2E" stroke-width="1.4"/>
+                <polygon points="180,105 172,99 174,109" fill="#EE2E2E"/>
+              </svg>
+            </div>
+            <h3>Visor 3D de skin <em>en la ficha</em></h3>
+            <p>React Three Fiber + drei en la nueva ficha: modelo GLB del arma con órbita/zoom, o tratamiento
+            parallax + barrido de luz sobre los renders existentes como primer paso. La inspección 3D es el gesto
+            que todo jugador de CS2 reconoce.</p>
+            <span class="chip">R3F + drei (agregar)</span>
+            <span class="chip">GLB low-poly (sourcing)</span>
+          </article>
+
+          <article class="threed__card">
+            <div class="mini">
+              <svg viewBox="0 0 220 130" width="200">
+                <g fill="none" stroke="rgba(255,255,255,0.3)">
+                  <rect x="20" y="20" width="180" height="90" rx="2"/>
+                  <line x1="20" y1="44" x2="200" y2="44"/>
+                </g>
+                <text x="30" y="37" fill="#EE2E2E" font-family="monospace" font-size="10">HERO · SCROLL SEQUENCE ✓</text>
+                <text x="30" y="70" fill="rgba(255,255,255,0.5)" font-family="monospace" font-size="9">mantener y extender:</text>
+                <text x="30" y="86" fill="#EDEAE2" font-family="monospace" font-size="9">frames PNG → escena R3F real</text>
+              </svg>
+            </div>
+            <h3>Hero: de frames a <em>escena real</em></h3>
+            <p>La secuencia de armado actual funciona muy bien. Evolución natural: la misma narrativa como escena
+            R3F (despiece del arma con scroll), eliminando los 720MB de PNGs y habilitando interacción.
+            Segundo paso, no bloqueante.</p>
+            <span class="chip chip--have">✓ Narrativa probada</span>
+            <span class="chip">Reemplaza 720MB de frames</span>
+          </article>
+
+          <article class="threed__card">
+            <div class="mini">
+              <svg viewBox="0 0 220 130" width="200">
+                <circle cx="110" cy="65" r="40" fill="none" stroke="rgba(255,255,255,0.25)"/>
+                <ellipse cx="110" cy="65" rx="40" ry="14" fill="none" stroke="rgba(255,255,255,0.18)"/>
+                <line x1="60" y1="25" x2="160" y2="105" stroke="#EE2E2E" stroke-width="1.2" stroke-dasharray="4 4"/>
+                <text x="78" y="122" fill="rgba(255,255,255,0.45)" font-family="monospace" font-size="9">RETIRAR</text>
+              </svg>
+            </div>
+            <h3>Globo cobe: <em>retirar</em></h3>
+            <p>Los traders no tienen geografía en el modelo — el globo cuenta una historia que los datos no respaldan.
+            Su lugar en la sección "Relaciones" lo ocupa el grafo de fuerza 3D con compradores y traders reales.
+            Menos ficción, más grafo: es un TP de Neo4j.</p>
+            <span class="chip">− cobe (remover dep)</span>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 05 ESPINA DEL PRODUCTO ===== -->
+<section class="section">
+  <div class="grid">
+    <div class="rail">
+      <span class="rail__num">05</span>
+      <span class="rail__label">Espina del producto</span>
+    </div>
+    <div>
+      <h2 class="title">Un solo recorrido. <em>Cada página alimenta la siguiente.</em></h2>
+      <p class="dek">Hoy la navegación es inconsistente (la home cierra hacia /skins pero el masthead dice "Dashboard"; el dashboard tiene su propio shell desconectado). El recorrido objetivo:</p>
+
+      <div class="spine">
+        <div class="spine__step">
+          <span class="mono mono--red">01 · NARRATIVA</span>
+          <h4>/ Home</h4>
+          <p>La historia del producto con números 100% reales. Hero 3D, grafo de fuerza real, CTA único hacia el catálogo.</p>
+          <div class="spine__state"><span class="tag tag--warn">Realificar datos</span></div>
+          <span class="spine__arrow">→</span>
+        </div>
+        <div class="spine__step">
+          <span class="mono mono--red">02 · EXPLORAR</span>
+          <h4>/skins Catálogo</h4>
+          <p>Filtros, búsqueda, rareza. Ya funciona y ya es coherente. Cada card es la puerta a una ficha.</p>
+          <div class="spine__state"><span class="tag tag--good">Casi listo</span></div>
+          <span class="spine__arrow">→</span>
+        </div>
+        <div class="spine__step">
+          <span class="mono mono--red">03 · INSPECCIONAR</span>
+          <h4>/skins/[id] Ficha</h4>
+          <p>El corazón: visor 3D, recorrido de la instancia en grafo, reputación del vendedor, historial de precios.</p>
+          <div class="spine__state"><span class="tag tag--broken">Reconstruir (P0)</span></div>
+          <span class="spine__arrow">→</span>
+        </div>
+        <div class="spine__step">
+          <span class="mono mono--red">04 · OPERAR</span>
+          <h4>/dashboard Radar</h4>
+          <p>Mismo periódico, "modo trabajo": variante de papel oscuro, mismas etiquetas mono, mismo rojo. Grafo 3D como workspace central.</p>
+          <div class="spine__state"><span class="tag tag--bad">Rediseñar (P0)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 06 LIMPIEZA ===== -->
+<section class="section">
+  <div class="grid">
+    <div class="rail">
+      <span class="rail__num">06</span>
+      <span class="rail__label">Limpieza</span>
+    </div>
+    <div>
+      <h2 class="title">Tres rediseños abandonados <em>apilados en el repo</em>.</h2>
+      <p class="dek">Código y assets muertos que confunden cada sesión de trabajo:</p>
+      <ul class="cleanup">
+        <li>components/home/ <small>14 componentes sin usar — la home real usa components/inicio/</small></li>
+        <li>components/inicio/NetworkGraph.tsx <small>el único grafo 3D del repo, nunca importado → reusar en fase 3</small></li>
+        <li>cs2-neo4j-mockup.html · skin-graph-radar-mockup.html <small>mockups viejos en la raíz → mover a docs/ o borrar</small></li>
+        <li>descarga.png · descarga (1).png · ak-47-bloodsport-2.webp <small>~3.4MB de imágenes sueltas en la raíz</small></li>
+        <li>ANIMATION_PROMPT_*.md · VIDEO_ANIMATION_PROMPT.md · CLAUDE_DESIGN_PROMPT.md <small>docs de diseño en la raíz → docs/</small></li>
+        <li>cytoscape + @types/cytoscape <small>si el grafo migra a 3D, remover; si no, mantener solo en ficha</small></li>
+        <li>cobe <small>remover junto con el globo (fase 4)</small></li>
+        <li>public/animation/ (720MB) <small>queda obsoleto si el hero pasa a R3F (fase 5)</small></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 07 ROADMAP ===== -->
+<section class="section">
+  <div class="grid">
+    <div class="rail">
+      <span class="rail__num">07</span>
+      <span class="rail__label">Roadmap</span>
+    </div>
+    <div>
+      <h2 class="title">Seis fases. <em>Cada una deployable por sí sola.</em></h2>
+
+      <div class="phases">
+        <div class="phase">
+          <div class="phase__num">F1<small>P0 · ~1 sesión</small></div>
+          <div>
+            <h3>Apagar el incendio</h3>
+            <ul>
+              <li><strong>Diagnosticar y arreglar el CSS de /skins/[id]</strong> — por qué Tailwind no genera las clases en prod (probable causa raíz de otros gaps de estilo).</li>
+              <li><strong>Arreglar los bugs de layout del dashboard</strong>: columnas superpuestas, textos cortados, cards desvanecidas, colisión del topbar.</li>
+            </ul>
+            <div class="phase__out">Resultado: nada roto en producción. Sin rediseño todavía — solo que funcione.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase__num">F2<small>P0 · 1–2 sesiones</small></div>
+          <div>
+            <h3>Una sola identidad</h3>
+            <ul>
+              <li>Formalizar el sistema editorial (ya documentado en SKINGRAPH_DESIGN_SYSTEM.md) como única fuente de tokens.</li>
+              <li><strong>Reconstruir la ficha de skin</strong> como "ficha técnica" editorial: la página insignia del producto.</li>
+              <li><strong>Rediseñar el dashboard</strong> como variante oscura del mismo periódico: mismos rails, mismas etiquetas mono, mismo rojo.</li>
+              <li>Unificar navegación según la espina: Home → Catálogo → Ficha → Dashboard.</li>
+            </ul>
+            <div class="phase__out">Resultado: las cuatro superficies parecen el mismo producto.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase__num">F3<small>P1 · 1–2 sesiones</small></div>
+          <div>
+            <h3>El grafo 3D insignia</h3>
+            <ul>
+              <li>Conectar <strong>react-force-graph-3d</strong> (ya instalado) a /api/graph con datos reales.</li>
+              <li>Graph Explorer del dashboard en 3D: ciclos sospechosos pulsando, click-to-inspect, filtros por tipo de nodo.</li>
+              <li>Recorrido de la instancia en la ficha como mini-grafo 3D.</li>
+            </ul>
+            <div class="phase__out">Resultado: la visual más persuasiva que puede tener un proyecto Neo4j — con datos honestos.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase__num">F4<small>P1 · 1 sesión</small></div>
+          <div>
+            <h3>Home honesta</h3>
+            <ul>
+              <li>Observatorio ← /api/opportunities · Cards de riesgo ← /api/risk-cycles · Mesa de análisis ← /api/metrics + market-pulse + traders.</li>
+              <li>Retirar el globo cobe; su sección la ocupa el grafo de fuerza 3D real.</li>
+              <li>Corregir "412.918 piezas" y todo número inventado.</li>
+            </ul>
+            <div class="phase__out">Resultado: cada número del sitio sale de Neo4j. Cero ficción.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase__num">F5<small>P2 · 2+ sesiones</small></div>
+          <div>
+            <h3>3D profundo</h3>
+            <ul>
+              <li>Visor 3D de skin en la ficha (R3F + drei, modelos GLB o parallax sobre renders como primer paso).</li>
+              <li>Hero como escena R3F interactiva → adiós a los 720MB de frames PNG.</li>
+            </ul>
+            <div class="phase__out">Resultado: "3D as much as possible", cumplido de verdad.</div>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase__num">F6<small>P2 · ~1 sesión</small></div>
+          <div>
+            <h3>Limpieza y cierre</h3>
+            <ul>
+              <li>Borrar components/home/, mockups y assets sueltos de la raíz; mover docs de diseño a docs/.</li>
+              <li>Remover deps muertas (cobe, cytoscape si migró).</li>
+              <li>Pasada responsive completa (la home mobile necesita ajustes de masthead y secciones).</li>
+            </ul>
+            <div class="phase__out">Resultado: repo que refleja un solo producto, listo para mostrar como portfolio.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CIERRE ===== -->
+<section class="cierre">
+  <span class="mono mono--red">Cierre</span>
+  <h2 style="margin-top:16px">
+    Menos ficción, <em>más grafo</em>.<br>
+    Una identidad, un recorrido,<br>
+    y el 3D donde <em>los datos lo respaldan</em>.
+  </h2>
+  <span class="mono mono--muted">SkinGraph Radar · Plan de coherencia · 2026-06-10</span>
+</section>
+
+<footer class="foot">
+  <span class="mono">SkinGraph Radar</span>
+  <span class="mono mono--muted">Auditoría: handoff/ux-audit/ · Script: scripts/ux-audit-shots.mjs</span>
+  <span class="mono mono--muted">docs/plan-coherencia-2026-06.html</span>
+</footer>
+
+</body>
+</html>

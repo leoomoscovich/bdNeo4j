@@ -13,8 +13,12 @@ PACKAGE="/tmp/cs2-skin-graph.tar.gz"
 
 echo "=== [1/4] Build ==="
 cd "$(dirname "$0")/.."
-rm -rf .next/dev
-npm run build
+if [ "$SKIP_BUILD" = "1" ]; then
+  echo "SKIP_BUILD=1 — usando el .next ya buildeado (correr 'npm run build' en PowerShell antes)"
+else
+  rm -rf .next/dev
+  npm run build
+fi
 
 echo "=== [2/4] Empaquetar ==="
 tar --exclude='.next/dev' \
@@ -26,8 +30,11 @@ echo "Paquete: $(du -sh $PACKAGE | cut -f1)"
 
 echo "=== [3/4] Subir y extraer en servidor ==="
 scp "$PACKAGE" "$SERVER:/tmp/"
+# Borrar el .next viejo antes de extraer: extraer encima mezcla chunks de
+# builds distintos y rompe el CSS/JS servido (build corrupto en prod).
 ssh "$SERVER" "
   cd $REMOTE_DIR &&
+  rm -rf .next &&
   tar -xzf /tmp/cs2-skin-graph.tar.gz &&
   rm /tmp/cs2-skin-graph.tar.gz &&
   npm install --omit=dev --silent

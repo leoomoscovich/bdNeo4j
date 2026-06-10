@@ -2,9 +2,10 @@
 
 /* eslint-disable react-hooks/set-state-in-effect -- Data fetching pattern required for graph visualization */
 
-import cytoscape, { type Core } from "cytoscape";
-import { useEffect, useRef, useState } from "react";
-import type { GraphResponse } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { Graph3D } from "./Graph3D";
+import { NodeDetailsPanel } from "./NodeDetailsPanel";
+import type { GraphNode, GraphResponse } from "@/lib/types";
 import type { GraphTarget } from "@/lib/ui-state";
 
 interface GraphInsightPanelProps {
@@ -13,61 +14,17 @@ interface GraphInsightPanelProps {
   graphTarget?: GraphTarget | null;
 }
 
-const baseColors: Record<GraphResponse["nodes"][number]["type"], string> = {
-  skin: "#c95a62",
-  instance: "#ef2a2a",
-  trader: "#d9d6d3",
-  transaction: "#f2ece8",
-  marketplace: "#8c434a",
-  weapon: "#d9d6d3",
-  sticker: "#c95a62",
-  collection: "#3a090d",
-  price: "#8c434a",
-};
-
-function cssVar(name: string, fallback: string) {
-  if (typeof window === "undefined") return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-}
-
-const nodeShapes: Record<GraphResponse["nodes"][number]["type"], string> = {
-  skin: "ellipse",
-  instance: "ellipse",
-  trader: "hexagon",
-  transaction: "ellipse",
-  marketplace: "roundrectangle",
-  weapon: "triangle",
-  sticker: "ellipse",
-  collection: "rectangle",
-  price: "ellipse",
-};
-
-const nodeSizes: Record<GraphResponse["nodes"][number]["type"], number> = {
-  skin: 70,
-  instance: 50,
-  trader: 44,
-  transaction: 30,
-  marketplace: 54,
-  weapon: 38,
-  sticker: 28,
-  collection: 48,
-  price: 26,
-};
-
 function riskColor(riskScore: number): string {
-  if (riskScore >= 80) return "#ef2a2a";
-  if (riskScore >= 60) return "#c95a62";
-  if (riskScore >= 40) return "#8c434a";
-  return baseColors.instance;
+  if (riskScore >= 80) return "#EE2E2E";
+  if (riskScore >= 60) return "#c0392b";
+  return "#8c5a5a";
 }
 
 export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, graphTarget }: GraphInsightPanelProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const cyRef = useRef<Core | null>(null);
   const [graph, setGraph] = useState<GraphResponse | null>(null);
   const [error, setError] = useState("");
   const [fetchingId, setFetchingId] = useState<string | null>(null);
-  const [themeVersion, setThemeVersion] = useState(0);
+  const [inspectedNode, setInspectedNode] = useState<GraphNode | null>(null);
 
   const activeSelection = graphTarget ?? selectedRiskCycle ?? selectedOpportunity ?? null;
   const isRiskMode = selectedRiskCycle != null || graphTarget?.type === "risk-cycle";
@@ -79,16 +36,11 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
   const loading = activeSelection != null && fetchingId === activeId && graph == null && error === "";
 
   useEffect(() => {
-    const observer = new MutationObserver(() => setThemeVersion((current) => current + 1));
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
     if (!activeSelection || !activeId) return;
 
     const currentId = activeId;
     setFetchingId(currentId);
+    setInspectedNode(null);
 
     const params = new URLSearchParams();
     if (graphTarget?.type === "trader") params.set("traderId", graphTarget.traderId);
@@ -109,92 +61,10 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
       .finally(() => setFetchingId((prev) => (prev === currentId ? null : prev)));
   }, [activeSelection, activeId, graphTarget]);
 
-  useEffect(() => {
-    if (!containerRef.current || !graph) {
-      return;
-    }
-
-    cyRef.current?.destroy();
-
-    const graphColors = {
-      skin: cssVar("--graph-skin", baseColors.skin),
-      instance: cssVar("--graph-instance", baseColors.instance),
-      trader: cssVar("--graph-trader", baseColors.trader),
-      transaction: cssVar("--graph-transaction", baseColors.transaction),
-      marketplace: cssVar("--graph-marketplace", baseColors.marketplace),
-      weapon: cssVar("--graph-weapon", baseColors.weapon),
-      sticker: cssVar("--graph-sticker", baseColors.sticker),
-      collection: cssVar("--graph-collection", baseColors.collection),
-      price: cssVar("--graph-price", baseColors.price),
-      nodeText: cssVar("--graph-node-text", "#f2ece8"),
-      nodeBorder: cssVar("--graph-node-border", "rgba(242,236,232,0.55)"),
-      textOutline: cssVar("--graph-text-outline", "#050608"),
-      edge: cssVar("--graph-edge", "rgba(201,90,98,0.58)"),
-      riskEdge: cssVar("--graph-risk-edge", "rgba(239,42,42,0.58)"),
-      edgeText: cssVar("--graph-edge-text", "#8c434a"),
-    };
-
-    const elements = [
-      ...graph.nodes.map((node) => {
-        const color = isRiskMode ? riskColor(riskScore) : graphColors[node.type];
-        return { data: { ...node, color } };
-      }),
-      ...graph.edges.map((edge) => ({ data: edge })),
-    ];
-
-    const nodeStyles = Object.keys(baseColors).map((type) => ({
-      selector: `node[type = "${type}"]`,
-      style: {
-        shape: nodeShapes[type as keyof typeof nodeShapes],
-        width: nodeSizes[type as keyof typeof nodeSizes],
-        height: nodeSizes[type as keyof typeof nodeSizes],
-      },
-    }));
-
-    cyRef.current = cytoscape({
-      container: containerRef.current,
-      elements,
-      style: [
-        {
-          selector: "node",
-          style: {
-            "background-color": "data(color)",
-            "border-color": graphColors.nodeBorder,
-            "border-width": 1,
-            color: graphColors.nodeText,
-            label: "data(label)",
-            "font-size": 10,
-            "text-outline-color": graphColors.textOutline,
-            "text-outline-width": 3,
-          },
-        },
-        ...nodeStyles,
-        {
-          selector: "edge",
-          style: {
-            "curve-style": "bezier",
-            "line-color": isRiskMode ? graphColors.riskEdge : graphColors.edge,
-            "target-arrow-color": isRiskMode ? graphColors.riskEdge : graphColors.edge,
-            "target-arrow-shape": "triangle",
-            label: "data(label)",
-            color: graphColors.edgeText,
-            "font-size": 8,
-            "text-rotation": "autorotate",
-          },
-        },
-      ],
-      layout: { name: "cose", animate: false, fit: true, padding: 34 },
-      userZoomingEnabled: true,
-      userPanningEnabled: true,
-    });
-
-    return () => cyRef.current?.destroy();
-  }, [graph, isRiskMode, riskScore, themeVersion]);
-
   if (!activeSelection) {
     return (
       <div className="insight-panel">
-        <div className="empty-state">Selecciona una oportunidad o ciclo de riesgo para ver el grafo.</div>
+        <div className="empty-state">Seleccioná una oportunidad o un ciclo de riesgo para ver el grafo.</div>
       </div>
     );
   }
@@ -203,7 +73,7 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
     <div className="insight-panel">
       <div className="insight-header">
         <h3 className="insight-title">
-          {isRiskMode ? "Ciclo de riesgo" : graphTarget ? "Graph target" : "Oportunidad"}: {activeLabel}
+          {isRiskMode ? "Ciclo de riesgo" : graphTarget ? "Grafo" : "Oportunidad"}: {activeLabel}
         </h3>
         {isRiskMode && (
           <span className="risk-badge" style={{ background: riskColor(riskScore) }}>
@@ -212,11 +82,29 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
         )}
       </div>
 
-      {loading && <div className="empty-state">Cargando grafo...</div>}
+      {loading && <div className="empty-state">Cargando grafo…</div>}
       {error && <div className="empty-state error-state">{error}</div>}
       {!loading && !error && !graph && <div className="empty-state">Sin datos de grafo para esta instancia.</div>}
 
-      <div className="insight-cy-container" ref={containerRef} />
+      {!loading && !error && graph && (
+        <>
+          <Graph3D
+            graph={graph}
+            height={420}
+            riskMode={isRiskMode}
+            onNodeClick={setInspectedNode}
+          />
+          <div className="graph3d-legend">
+            <span><i style={{ background: "#EE2E2E" }} />Skin / riesgo</span>
+            <span><i style={{ background: "#EDEAE2" }} />Instancia</span>
+            <span><i style={{ background: "#9a9a96" }} />Trader</span>
+            <span><i style={{ background: "#c98a2a" }} />Marketplace</span>
+            <span><i style={{ background: "#5b5b60" }} />Transacción</span>
+            <span className="graph3d-hint">Arrastrá para rotar · scroll para zoom · click para inspeccionar</span>
+          </div>
+          {inspectedNode && <NodeDetailsPanel node={inspectedNode} />}
+        </>
+      )}
     </div>
   );
 }

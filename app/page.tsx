@@ -1,25 +1,29 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Clock, ScrollReveal, CounterRolls } from '@/components/inicio/InicioClient';
-import NetworkGlobe from '@/components/inicio/NetworkGlobe';
+import NetworkExplorer from '@/components/inicio/NetworkExplorer';
 import HeroSequence from '@/components/inicio/HeroSequence';
 import SignalsSection from '@/components/inicio/SignalsSection';
-import { runQuery } from '@/lib/neo4j';
-import { metricsQuery } from '@/lib/queries';
-import { mapMetrics } from '@/lib/graph-mappers';
+import { getHomeData } from '@/lib/home-data';
 import './inicio/inicio.css';
 
-async function getMetrics() {
-  try {
-    const result = await runQuery(metricsQuery, {});
-    return mapMetrics(result.records);
-  } catch {
-    return null;
-  }
-}
+export const revalidate = 300;
+
+const fmtUsd = (value: number) =>
+  `$${Math.round(value).toLocaleString('es-AR')}`;
+
+const severityLabel: Record<string, string> = {
+  CRITICAL: 'Crítico',
+  HIGH: 'Riesgo alto',
+  MEDIUM: 'Riesgo medio',
+  LOW: 'Riesgo bajo',
+};
 
 export default async function HomePage() {
-  const metrics = await getMetrics();
+  const { metrics, opportunities, riskCycles, traders, pulse, graphCounts, networkGraph, featuredTrader, skinImages } = await getHomeData();
+  const topOpps = opportunities.slice(0, 4);
+  const topCycles = riskCycles.slice(0, 4);
+  const topTraders = traders.slice(0, 4);
   return (
     <div className="sg">
       <ScrollReveal />
@@ -103,10 +107,14 @@ export default async function HomePage() {
               <em>Cuando los compradores</em> se repiten,<br />
               el mercado empieza a mostrar <em>patrones</em>.
             </h2>
-            <p className="section__dek">El valor no está solo en la skin. Está en quién la compra, quién la vende y cómo esas conexiones se vuelven a cruzar dos, cinco, doce veces.</p>
+            <p className="section__dek">El valor no está solo en la skin. Está en quién la compra, quién la vende y cómo esas conexiones se vuelven a cruzar. Este grafo no es una ilustración: son los nodos reales de la base Neo4j.</p>
           </div>
         </header>
-        <NetworkGlobe />
+        {networkGraph && networkGraph.nodes.length > 0 ? (
+          <NetworkExplorer graph={networkGraph} featuredTrader={featuredTrader} />
+        ) : (
+          <p className="section__dek">El grafo se está indexando. Volvé en unos minutos.</p>
+        )}
       </section>
 
       {/* ===== 04 · MOVIMIENTOS SOSPECHOSOS ===== */}
@@ -129,60 +137,24 @@ export default async function HomePage() {
         </header>
 
         <div className="risks">
-          <article className="risk">
-            <header className="risk__head">
-              <span className="mono mono--red">R/01</span>
-              <span className="mono mono--mutedi">Ciclo cerrado</span>
-            </header>
-            <div className="risk__viz">
-              <svg viewBox="0 0 200 200">
+          {topCycles.map((cycle, i) => {
+            const vizzes = [
+              <svg viewBox="0 0 200 200" key="v0">
                 <circle cx="100" cy="100" r="68" fill="none" stroke="rgba(255,255,255,0.18)" strokeDasharray="2 4" />
                 <circle className="ringdash" cx="100" cy="100" r="68" fill="none" stroke="#EE2E2E" strokeWidth="1.4" strokeDasharray="320 80" />
                 <circle cx="100" cy="32"  r="6" fill="#fff" />
                 <circle cx="159" cy="100" r="6" fill="#fff" />
                 <circle cx="100" cy="168" r="6" fill="#fff" />
                 <circle cx="41"  cy="100" r="6" fill="#EE2E2E" />
-              </svg>
-            </div>
-            <h3 className="risk__title">A → B → C → A</h3>
-            <p className="risk__copy">Una misma instancia atraviesa cuatro carteras y vuelve a su punto de origen en menos de 36 h.</p>
-            <dl className="risk__data">
-              <div><dt>Saltos</dt><dd>4</dd></div>
-              <div><dt>Duración</dt><dd>34 h 12 m</dd></div>
-              <div><dt>Δ precio</dt><dd className="num--up">+22%</dd></div>
-            </dl>
-          </article>
-
-          <article className="risk">
-            <header className="risk__head">
-              <span className="mono mono--red">R/02</span>
-              <span className="mono mono--mutedi">Precio anómalo</span>
-            </header>
-            <div className="risk__viz">
-              <svg viewBox="0 0 200 200">
+              </svg>,
+              <svg viewBox="0 0 200 200" key="v1">
                 <line x1="20" y1="170" x2="180" y2="170" stroke="rgba(255,255,255,0.2)" />
                 <line x1="20" y1="170" x2="20"  y2="30"  stroke="rgba(255,255,255,0.2)" />
                 <polyline points="20,140 50,128 80,132 110,118 140,124 170,120" fill="none" stroke="#fff" strokeWidth="1.4" />
                 <circle cx="120" cy="58" r="6" fill="#EE2E2E" />
                 <line x1="120" y1="58" x2="120" y2="170" stroke="rgba(238,46,46,0.4)" strokeDasharray="2 4" />
-              </svg>
-            </div>
-            <h3 className="risk__title">Listado fuera del rango razonable</h3>
-            <p className="risk__copy">Una instancia aparece 3,4× sobre la mediana de 30 días sin justificación visible en stickers ni float.</p>
-            <dl className="risk__data">
-              <div><dt>Desviación</dt><dd>+3,4σ</dd></div>
-              <div><dt>Venue</dt><dd>BUFF163</dd></div>
-              <div><dt>Vendedor</dt><dd>nuevo (12 d)</dd></div>
-            </dl>
-          </article>
-
-          <article className="risk">
-            <header className="risk__head">
-              <span className="mono mono--red">R/03</span>
-              <span className="mono mono--mutedi">Reaparición</span>
-            </header>
-            <div className="risk__viz">
-              <svg viewBox="0 0 200 200">
+              </svg>,
+              <svg viewBox="0 0 200 200" key="v2">
                 <g stroke="rgba(255,255,255,0.25)" fill="none">
                   <rect x="30"  y="40"  width="42" height="42" rx="2" />
                   <rect x="80"  y="80"  width="42" height="42" rx="2" />
@@ -194,24 +166,8 @@ export default async function HomePage() {
                   <path d="M151 82 L101 120" /><path d="M101 80 L101 120" />
                 </g>
                 <circle cx="101" cy="101" r="5" fill="#EE2E2E" />
-              </svg>
-            </div>
-            <h3 className="risk__title">Misma instancia, cuatro listados</h3>
-            <p className="risk__copy">El mismo float, los mismos stickers y el mismo paint seed aparecen en cuatro listados consecutivos.</p>
-            <dl className="risk__data">
-              <div><dt>Apariciones</dt><dd>4</dd></div>
-              <div><dt>Ventana</dt><dd>11 d</dd></div>
-              <div><dt>Δ precio</dt><dd className="num--up">+58%</dd></div>
-            </dl>
-          </article>
-
-          <article className="risk">
-            <header className="risk__head">
-              <span className="mono mono--red">R/04</span>
-              <span className="mono mono--mutedi">Conexión indirecta</span>
-            </header>
-            <div className="risk__viz">
-              <svg viewBox="0 0 200 200">
+              </svg>,
+              <svg viewBox="0 0 200 200" key="v3">
                 <g stroke="rgba(255,255,255,0.18)" fill="none">
                   <line x1="30" y1="100" x2="100" y2="60" /><line x1="100" y1="60" x2="170" y2="100" />
                   <line x1="30" y1="100" x2="100" y2="140" /><line x1="100" y1="140" x2="170" y2="100" />
@@ -223,16 +179,31 @@ export default async function HomePage() {
                 <circle cx="170" cy="100" r="7" fill="#fff" />
                 <circle cx="100" cy="60"  r="5" fill="#EE2E2E" />
                 <circle cx="100" cy="140" r="5" fill="#EE2E2E" />
-              </svg>
-            </div>
-            <h3 className="risk__title">Dos compradores, dos traders en común</h3>
-            <p className="risk__copy">Sin contacto directo entre sí, comparten dos traders intermediarios en seis transacciones consecutivas.</p>
-            <dl className="risk__data">
-              <div><dt>Distancia</dt><dd>2 saltos</dd></div>
-              <div><dt>Coincidencias</dt><dd>6</dd></div>
-              <div><dt>Última</dt><dd>hace 2 d</dd></div>
-            </dl>
-          </article>
+              </svg>,
+            ];
+            const pathPreview = cycle.traderPath.slice(0, 3).join(' → ') + (cycle.traderPath.length > 3 ? ' → …' : '');
+            return (
+              <article className="risk" key={cycle.id}>
+                <header className="risk__head">
+                  <span className="mono mono--red">R/{String(i + 1).padStart(2, '0')}</span>
+                  <span className="mono mono--mutedi">{severityLabel[cycle.severity] ?? cycle.severity}</span>
+                </header>
+                <div className="risk__viz">{vizzes[i % vizzes.length]}</div>
+                <h3 className="risk__title">{cycle.skinName}</h3>
+                <p className="risk__copy">
+                  {cycle.evidence[0]?.description ?? `Ruta circular detectada: ${pathPreview}. La instancia vuelve sobre traders ya visitados.`}
+                </p>
+                <dl className="risk__data">
+                  <div><dt>Traders</dt><dd>{cycle.traderPath.length}</dd></div>
+                  <div><dt>Ventana</dt><dd>{cycle.timeWindowHours} h</dd></div>
+                  <div><dt>Movido</dt><dd className="num--up">{fmtUsd(cycle.valueMovedUsd)}</dd></div>
+                </dl>
+              </article>
+            );
+          })}
+          {topCycles.length === 0 && (
+            <p className="section__dek section__dek--inv">Sin ciclos sospechosos detectados en este período.</p>
+          )}
         </div>
 
         <div className="riskstrip">
@@ -251,65 +222,40 @@ export default async function HomePage() {
         <div className="interlude__inner">
           <header className="interlude__head">
             <span className="mono mono--muted">Observatorio</span>
-            <span className="mono mono--muted">12 piezas seleccionadas · ÚLT 24 h</span>
+            <span className="mono mono--muted">{topOpps.length} señales con mayor spread · datos en vivo</span>
           </header>
           <ol className="obs">
-            <li className="obs__card">
-              <div className="obs__media obs__media--rifle">
-                <Image src="/hero.png" alt="" fill style={{ objectFit: 'cover', objectPosition: '60% center' }} />
-              </div>
-              <div className="obs__meta">
-                <span className="obs__label">AK-47 │ VOLTAIC</span>
-                <span className="obs__wear">FN 0.018</span>
-              </div>
-              <div className="obs__row">
-                <span className="num">$1.842</span>
-                <span className="num num--up">+14,4%</span>
-              </div>
-            </li>
-            <li className="obs__card">
-              <div className="obs__media obs__media--white">
-                <Image src="/karambit-emerald.webp" alt="" fill style={{ objectFit: 'contain', padding: '8%', mixBlendMode: 'multiply' }} />
-              </div>
-              <div className="obs__meta">
-                <span className="obs__label">KARAMBIT │ EMERALD</span>
-                <span className="obs__wear">FN 0.012</span>
-              </div>
-              <div className="obs__row">
-                <span className="num">$2.940</span>
-                <span className="num num--up">+12,6%</span>
-              </div>
-            </li>
-            <li className="obs__card">
-              <div className="obs__media">
-                <Image src="/butterfly-doppler.png" alt="" fill style={{ objectFit: 'cover' }} />
-              </div>
-              <div className="obs__meta">
-                <span className="obs__label">BUTTERFLY │ DOPPLER</span>
-                <span className="obs__wear">MW 0.094</span>
-              </div>
-              <div className="obs__row">
-                <span className="num">$1.610</span>
-                <span className="num">+7,2%</span>
-              </div>
-            </li>
-            <li className="obs__card">
-              <div className="obs__media obs__media--pov">
-                <Image src="/karambit-fire-pov.jpg" alt="" fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
-              </div>
-              <div className="obs__meta">
-                <span className="obs__label">KARAMBIT │ FIRE SERPENT</span>
-                <span className="obs__wear">FT 0.221</span>
-              </div>
-              <div className="obs__row">
-                <span className="num">$612</span>
-                <span className="num num--up">+11,4%</span>
-              </div>
-            </li>
+            {topOpps.map((opp) => (
+              <li className="obs__card" key={opp.id}>
+                <Link href={`/skins/${opp.skinId}`} style={{ display: 'contents' }}>
+                  <div className="obs__media obs__media--white">
+                    {skinImages[opp.skinId] ? (
+                      <Image
+                        src={skinImages[opp.skinId]}
+                        alt={opp.skinName}
+                        fill
+                        sizes="(max-width: 800px) 50vw, 25vw"
+                        style={{ objectFit: 'contain', padding: '10%' }}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="obs__meta">
+                    <span className="obs__label">{opp.skinName.toUpperCase()}</span>
+                    <span className="obs__wear">{opp.wear} {opp.float.toFixed(3)}</span>
+                  </div>
+                  <div className="obs__row">
+                    <span className="num">{fmtUsd(opp.currentAskUsd)}</span>
+                    <span className={`num${opp.spreadPct >= 8 ? ' num--up' : ''}`}>
+                      {opp.spreadPct >= 0 ? '+' : ''}{opp.spreadPct.toFixed(1).replace('.', ',')}%
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
           </ol>
           <footer className="interlude__foot mono mono--muted">
-            <span>Selección editorial</span>
-            <span>→ ver las 412.918 piezas</span>
+            <span>Ranking por spread contra valor justo</span>
+            <Link href="/skins">→ ver las {metrics ? metrics.skinsIndexed.toLocaleString('es-AR') : '—'} piezas</Link>
           </footer>
         </div>
       </section>
@@ -407,21 +353,25 @@ export default async function HomePage() {
               </svg>
             </div>
             <footer className="desk__foot mono mono--muted">
-              <span>Spread medio · ÚLT 24 h</span><span>Outliers · 12</span><span>Velocidad · alta</span>
+              <span>Spread medio · {pulse && Number.isFinite(pulse.averageSpreadPct) ? `${pulse.averageSpreadPct.toFixed(1).replace('.', ',')}%` : '—'}</span>
+              <span>Señales · {pulse ? pulse.dealsDetected : '—'}</span>
+              <span>Volumen · {pulse ? fmtUsd(pulse.trackedVolumeUsd) : '—'}</span>
             </footer>
           </article>
 
           <article className="desk__tile">
             <header className="desk__tilehead">
               <span className="mono mono--muted">I/02 · Risk Cycles</span>
-              <span className="mono mono--red">4 nuevos</span>
+              <span className="mono mono--red">{pulse ? `${pulse.suspiciousCycles} activos` : '—'}</span>
             </header>
             <h3 className="desk__title">Ciclos de riesgo</h3>
             <ul className="desk__list">
-              <li><span className="mono mono--muted">C-088</span> AK-47 │ Voltaic <span className="num num--up">+22%</span></li>
-              <li><span className="mono mono--muted">C-091</span> AWP │ Wildfire <span className="num num--up">+11%</span></li>
-              <li><span className="mono mono--muted">C-094</span> Karambit │ Dop. <span className="num num--up">+58%</span></li>
-              <li><span className="mono mono--muted">C-099</span> M4A1 │ Print. <span className="num">+7%</span></li>
+              {topCycles.map((cycle) => (
+                <li key={cycle.id}>
+                  <span className="mono mono--muted">{cycle.severity}</span> {cycle.skinName}{' '}
+                  <span className={`num${cycle.riskScore >= 70 ? ' num--up' : ''}`}>{cycle.riskScore}</span>
+                </li>
+              ))}
             </ul>
           </article>
 
@@ -444,7 +394,8 @@ export default async function HomePage() {
               </svg>
             </div>
             <footer className="desk__foot mono mono--muted">
-              <span>Nodos · 2.1K</span><span>Aristas · 5.8K</span>
+              <span>Nodos · {graphCounts ? graphCounts.nodes.toLocaleString('es-AR') : '—'}</span>
+              <span>Aristas · {graphCounts ? graphCounts.edges.toLocaleString('es-AR') : '—'}</span>
             </footer>
           </article>
 
@@ -455,25 +406,26 @@ export default async function HomePage() {
             <h3 className="desk__title">Mapa de traders</h3>
             <table className="desk__table">
               <tbody>
-                <tr><td className="mono">T-118</td><td>118 tx</td><td className="num num--up">+14%</td></tr>
-                <tr><td className="mono">T-204</td><td>71 tx</td><td className="num num--up">+9%</td></tr>
-                <tr><td className="mono">T-309</td><td>54 tx</td><td className="num">+3%</td></tr>
-                <tr><td className="mono">T-412</td><td>49 tx</td><td className="num num--up">+18%</td></tr>
+                {topTraders.map((trader) => (
+                  <tr key={trader.id}>
+                    <td className="mono">{trader.handle}</td>
+                    <td>{trader.transactionCount} tx</td>
+                    <td className={`num${trader.riskScore >= 60 ? ' num--up' : ''}`}>{fmtUsd(trader.volumeUsd)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </article>
 
           <article className="desk__tile">
             <header className="desk__tilehead">
-              <span className="mono mono--muted">I/05 · Watchlist</span>
+              <span className="mono mono--muted">I/05 · Señales</span>
             </header>
-            <h3 className="desk__title">Lista de seguimiento</h3>
+            <h3 className="desk__title">Señales destacadas</h3>
             <ul className="desk__list desk__list--tight">
-              <li>AK-47 │ Voltaic <span className="mono mono--muted">FN</span></li>
-              <li>AWP │ Wildfire <span className="mono mono--muted">FT</span></li>
-              <li>Glock-18 │ Fade <span className="mono mono--muted">FN</span></li>
-              <li>USP-S │ Kill Confirmed</li>
-              <li>M4A1-S │ Printstream</li>
+              {opportunities.slice(0, 5).map((opp) => (
+                <li key={opp.id}>{opp.skinName} <span className="mono mono--muted">{opp.wear}</span></li>
+              ))}
             </ul>
           </article>
 
@@ -481,26 +433,33 @@ export default async function HomePage() {
             <header className="desk__tilehead">
               <span className="mono mono--muted">I/06 · Compare</span>
             </header>
-            <h3 className="desk__title">Comparar entre venues</h3>
+            <h3 className="desk__title">Mejores spreads por venue</h3>
             <div className="compare">
-              <div className="compare__row">
-                <span className="mono mono--muted">CSFLOAT</span>
-                <span className="compare__bar"><span style={{'--w': '.78'} as React.CSSProperties} /></span>
-                <span className="num">$1.842</span>
-              </div>
-              <div className="compare__row">
-                <span className="mono mono--muted">BUFF163</span>
-                <span className="compare__bar"><span style={{'--w': '.62'} as React.CSSProperties} className="bar--red" /></span>
-                <span className="num">$1.610</span>
-              </div>
-              <div className="compare__row">
-                <span className="mono mono--muted">SKINPORT</span>
-                <span className="compare__bar"><span style={{'--w': '.71'} as React.CSSProperties} /></span>
-                <span className="num">$1.789</span>
-              </div>
+              {topOpps.slice(0, 3).map((opp) => {
+                const maxAsk = Math.max(...topOpps.slice(0, 3).map((o) => o.currentAskUsd), 1);
+                return (
+                  <div className="compare__row" key={opp.id}>
+                    <span className="mono mono--muted">{opp.marketplace.toUpperCase()}</span>
+                    <span className="compare__bar">
+                      <span
+                        style={{ '--w': String(Math.max(0.08, opp.currentAskUsd / maxAsk)) } as React.CSSProperties}
+                        className={opp.spreadPct >= 10 ? 'bar--red' : undefined}
+                      />
+                    </span>
+                    <span className="num">{fmtUsd(opp.currentAskUsd)}</span>
+                  </div>
+                );
+              })}
             </div>
             <footer className="desk__foot mono mono--muted">
-              <span>Pieza · AK-47 │ Voltaic FN</span><span>Spread · +14,4%</span>
+              {topOpps[0] ? (
+                <>
+                  <span>Pieza · {topOpps[0].skinName} {topOpps[0].wear}</span>
+                  <span>Spread · +{topOpps[0].spreadPct.toFixed(1).replace('.', ',')}%</span>
+                </>
+              ) : (
+                <span>Sin señales activas</span>
+              )}
             </footer>
           </article>
         </div>

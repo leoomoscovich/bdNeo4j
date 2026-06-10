@@ -1,158 +1,63 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import type { SkinDetailResponse, JourneyStep, TraderReputation, InstanceSummary } from "@/lib/types";
+import { Graph3D } from "@/components/Graph3D";
+import { SkinInspect3D } from "@/components/SkinInspect3D";
+import type { GraphResponse, SkinDetailResponse, JourneyStep, TraderReputation, InstanceSummary } from "@/lib/types";
+import "../catalog.css";
+import "./ficha.css";
+
+const RARITY_VAR: Record<string, string> = {
+  Consumer:    "var(--r-consumer)",
+  Industrial:  "var(--r-industrial)",
+  "Mil-Spec":  "var(--r-milspec)",
+  Restricted:  "var(--r-restricted)",
+  Classified:  "var(--r-classified)",
+  Covert:      "var(--r-covert)",
+  Contraband:  "var(--r-contraband)",
+};
 
 // ─── reputation badge ──────────────────────────────────────────────────────────
 
 function ReputationBadge({ label }: { label: TraderReputation["reputationLabel"] }) {
   const config = {
-    trusted:    { text: "✓ Confiable",   cls: "bg-green-500/15 text-green-400 border-green-500/30" },
-    neutral:    { text: "◐ Neutral",     cls: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" },
-    suspicious: { text: "⚠ Sospechoso", cls: "bg-red-500/15 text-red-400 border-red-500/30" },
+    trusted:    { text: "✓ Confiable",   cls: "rep-badge--trusted" },
+    neutral:    { text: "◐ Neutral",     cls: "rep-badge--neutral" },
+    suspicious: { text: "⚠ Sospechoso", cls: "rep-badge--suspicious" },
   }[label];
-  return (
-    <span className={`inline-flex items-center gap-1 border rounded px-2 py-0.5 text-xs font-mono ${config.cls}`}>
-      {config.text}
-    </span>
-  );
+  return <span className={`rep-badge ${config.cls}`}>{config.text}</span>;
 }
 
-// ─── journey graph (cytoscape) ────────────────────────────────────────────────
+// ─── journey graph (grafo 3D con datos reales de Neo4j) ──────────────────────
 
-function JourneyGraph({ steps }: { steps: JourneyStep[] }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const cyRef = useRef<unknown>(null);
+function JourneyGraph3D({ instanceId, steps }: { instanceId: string | undefined; steps: JourneyStep[] }) {
+  const [graph, setGraph] = useState<GraphResponse | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current || steps.length === 0) return;
+    if (!instanceId) return;
+    setGraph(null);
+    setFailed(false);
+    fetch(`/api/graph?instanceId=${encodeURIComponent(instanceId)}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("graph"))))
+      .then((payload: GraphResponse) => setGraph(payload))
+      .catch(() => setFailed(true));
+  }, [instanceId]);
 
-    import("cytoscape").then(({ default: cytoscape }) => {
-      if (cyRef.current) (cyRef.current as { destroy: () => void }).destroy();
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const nodes = new Map<string, any>();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const edges: any[] = [];
-
-      steps.forEach((step, i) => {
-        const sellerId = step.seller.id;
-        const buyerId = step.buyer?.id;
-        const txId = `tx-${i}`;
-
-        if (!nodes.has(sellerId)) {
-          nodes.set(sellerId, {
-            data: {
-              id: sellerId,
-              label: step.seller.name,
-              type: "trader",
-              reputation: step.seller.reputation,
-              riskScore: step.seller.riskScore,
-            },
-          });
-        }
-        if (buyerId && !nodes.has(buyerId)) {
-          nodes.set(buyerId, {
-            data: {
-              id: buyerId,
-              label: step.buyer!.name,
-              type: "trader",
-              reputation: 0.5,
-              riskScore: 0,
-            },
-          });
-        }
-        nodes.set(txId, {
-          data: {
-            id: txId,
-            label: `$${step.priceUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}\n${step.marketplace}`,
-            type: "tx",
-            timestamp: step.timestamp,
-          },
-        });
-
-        edges.push({ data: { id: `e-s-${i}`, source: sellerId, target: txId, label: "SOLD" } });
-        if (buyerId) edges.push({ data: { id: `e-b-${i}`, source: txId, target: buyerId, label: "BOUGHT" } });
-      });
-
-      cyRef.current = cytoscape({
-        container: containerRef.current!,
-        elements: {
-          nodes: [...nodes.values()],
-          edges,
-        },
-        layout: { name: "breadthfirst", directed: true, spacingFactor: 1.4 },
-        style: [
-          {
-            selector: "node[type='trader']",
-            style: {
-              "background-color": (ele: { data: (k: string) => number }) =>
-                ele.data("riskScore") > 60 ? "#ef4444" : ele.data("reputation") > 0.75 ? "#22c55e" : "#a3a3a3",
-              "label": "data(label)",
-              "color": "#fff",
-              "font-size": "10px",
-              "font-family": "monospace",
-              "text-valign": "bottom",
-              "text-margin-y": 4,
-              "width": 28,
-              "height": 28,
-              "border-width": 2,
-              "border-color": "#ffffff22",
-            },
-          },
-          {
-            selector: "node[type='tx']",
-            style: {
-              "background-color": "#1e1e2e",
-              "border-width": 1.5,
-              "border-color": "#6366f1",
-              "label": "data(label)",
-              "color": "#a5b4fc",
-              "font-size": "9px",
-              "font-family": "monospace",
-              "text-valign": "center",
-              "text-wrap": "wrap",
-              "width": 64,
-              "height": 30,
-              "shape": "round-rectangle",
-            },
-          },
-          {
-            selector: "edge",
-            style: {
-              "width": 1.5,
-              "line-color": "#334155",
-              "target-arrow-color": "#334155",
-              "target-arrow-shape": "triangle",
-              "curve-style": "bezier",
-              "label": "data(label)",
-              "font-size": "8px",
-              "font-family": "monospace",
-              "color": "#64748b",
-              "text-rotation": "autorotate",
-            },
-          },
-        ],
-      });
-    });
-
-    return () => {
-      if (cyRef.current) (cyRef.current as { destroy: () => void }).destroy();
-    };
-  }, [steps]);
-
-  if (steps.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-48 text-[var(--c-muted)] text-sm font-mono">
-        Sin historial de transacciones
-      </div>
-    );
+  if (!instanceId || steps.length === 0) {
+    return <div className="ficha-graph__empty">Sin historial de transacciones</div>;
+  }
+  if (failed) {
+    return <div className="ficha-graph__empty">No se pudo cargar el grafo</div>;
+  }
+  if (!graph) {
+    return <div className="ficha-graph__empty">Cargando grafo…</div>;
   }
 
-  return <div ref={containerRef} className="w-full h-64 rounded" />;
+  return <Graph3D graph={graph} height={380} />;
 }
 
 // ─── instance selector ────────────────────────────────────────────────────────
@@ -167,16 +72,12 @@ function InstanceSelector({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="ficha-instances">
       {instances.map((inst) => (
         <button
           key={inst.id}
           onClick={() => onSelect(inst.id)}
-          className={`border rounded px-3 py-1.5 text-xs font-mono transition-colors ${
-            inst.id === selected
-              ? "border-[var(--c-accent)] bg-[var(--c-accent)]/10 text-[var(--c-accent)]"
-              : "border-[var(--c-border)] hover:border-[var(--c-accent)] text-[var(--c-muted)]"
-          }`}
+          className={`ficha-instance${inst.id === selected ? " ficha-instance--active" : ""}`}
         >
           {inst.wear} · {inst.floatValue.toFixed(4)}
         </button>
@@ -191,16 +92,17 @@ function PriceTimeline({ steps }: { steps: JourneyStep[] }) {
   if (steps.length === 0) return null;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs font-mono">
+    <div className="ficha-table-wrap">
+      <table className="ficha-table">
         <thead>
-          <tr className="text-[var(--c-muted)] border-b border-[var(--c-border)]">
-            <th className="text-left py-2 pr-4">#</th>
-            <th className="text-left py-2 pr-4">Precio</th>
-            <th className="text-left py-2 pr-4">Marketplace</th>
-            <th className="text-left py-2 pr-4">Vendedor</th>
-            <th className="text-left py-2 pr-4">Comprador</th>
-            <th className="text-left py-2">Fecha</th>
+          <tr>
+            <th>#</th>
+            <th>Precio</th>
+            <th>Δ</th>
+            <th>Marketplace</th>
+            <th>Vendedor</th>
+            <th>Comprador</th>
+            <th>Fecha</th>
           </tr>
         </thead>
         <tbody>
@@ -208,22 +110,22 @@ function PriceTimeline({ steps }: { steps: JourneyStep[] }) {
             const prev = steps[i - 1];
             const delta = prev ? ((step.priceUsd - prev.priceUsd) / prev.priceUsd) * 100 : null;
             return (
-              <tr key={step.txId} className="border-b border-[var(--c-border)]/50 hover:bg-[var(--c-surface)]">
-                <td className="py-2 pr-4 text-[var(--c-muted)]">{i + 1}</td>
-                <td className="py-2 pr-4">
-                  <span className="font-semibold">${step.priceUsd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                  {delta !== null && (
-                    <span className={`ml-2 text-[10px] ${delta >= 0 ? "text-green-400" : "text-red-400"}`}>
+              <tr key={step.txId}>
+                <td className="muted">{i + 1}</td>
+                <td><b>${step.priceUsd.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</b></td>
+                <td>
+                  {delta !== null ? (
+                    <span className={delta >= 0 ? "delta--up" : "delta--down"}>
                       {delta >= 0 ? "+" : ""}{delta.toFixed(1)}%
                     </span>
+                  ) : (
+                    <span className="muted">—</span>
                   )}
                 </td>
-                <td className="py-2 pr-4 text-[var(--c-muted)]">{step.marketplace || "—"}</td>
-                <td className={`py-2 pr-4 ${step.seller.riskScore > 60 ? "text-red-400" : ""}`}>
-                  {step.seller.name}
-                </td>
-                <td className="py-2 pr-4 text-[var(--c-muted)]">{step.buyer?.name ?? "—"}</td>
-                <td className="py-2 text-[var(--c-muted)]">
+                <td className="muted">{step.marketplace || "—"}</td>
+                <td className={step.seller.riskScore > 60 ? "seller--risk" : ""}>{step.seller.name}</td>
+                <td className="muted">{step.buyer?.name ?? "—"}</td>
+                <td className="muted">
                   {step.timestamp ? new Date(step.timestamp).toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}
                 </td>
               </tr>
@@ -232,6 +134,26 @@ function PriceTimeline({ steps }: { steps: JourneyStep[] }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+// ─── nav compartida (misma del catálogo) ──────────────────────────────────────
+
+function FichaNav() {
+  return (
+    <nav className="cat-nav">
+      <div className="cat-nav__row1">
+        <Link href="/" className="brand">
+          <span className="brand__mark">SG</span>
+          <span>SkinGraph Radar</span>
+        </Link>
+        <div className="cat-nav__links">
+          <Link href="/" className="cat-nav__link">← Inicio</Link>
+          <Link href="/skins" className="cat-nav__link cat-nav__link--active">Catálogo</Link>
+          <Link href="/dashboard" className="cat-nav__link">Dashboard</Link>
+        </div>
+      </div>
+    </nav>
   );
 }
 
@@ -273,18 +195,24 @@ export default function SkinDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center">
-        <span className="text-[var(--c-muted)] font-mono animate-pulse">Consultando Neo4j...</span>
+      <div className="catalog-page">
+        <FichaNav />
+        <div className="ficha-state">
+          <span className="ficha-state__msg ficha-state__msg--loading">Consultando Neo4j…</span>
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[var(--c-bg)] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 font-mono mb-4">{error ?? "No se encontró la skin"}</p>
-          <Link href="/skins" className="text-[var(--c-muted)] hover:text-[var(--c-fg)] text-sm">← Volver al catálogo</Link>
+      <div className="catalog-page">
+        <FichaNav />
+        <div className="ficha-state">
+          <div className="ficha-state__box">
+            <p className="ficha-state__msg ficha-state__msg--error">{error ?? "No se encontró la skin"}</p>
+            <Link href="/skins" className="ficha-state__link">← Volver al catálogo</Link>
+          </div>
         </div>
       </div>
     );
@@ -293,112 +221,193 @@ export default function SkinDetailPage() {
   const { skin, journey, currentSeller } = data;
   const currentInstance = skin.instances.find((i) => i.id === selectedInstance) ?? skin.instances[0];
   const latestTx = currentInstance?.txHistory[currentInstance.txHistory.length - 1];
+  const rarityColor = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
+  const skinNameOnly = skin.name.replace(`${skin.weapon} | `, "");
 
   return (
-    <div className="min-h-screen bg-[var(--c-bg)]">
-      {/* Header */}
-      <header className="border-b border-[var(--c-border)] px-6 py-4">
-        <div className="max-w-5xl mx-auto">
-          <Link href="/skins" className="text-[var(--c-muted)] text-sm hover:text-[var(--c-fg)] transition-colors">
-            ← Catálogo
-          </Link>
-          <div className="flex flex-wrap items-start justify-between gap-4 mt-2">
-            {skin.imageUrl && (
-              <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded border border-[var(--c-border)] bg-black/20">
-                <Image
-                  src={skin.imageUrl}
-                  alt={skin.name}
-                  fill
-                  sizes="144px"
-                  priority
-                  style={{ objectFit: "contain", padding: 10 }}
-                />
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-mono text-[var(--c-muted)]">{skin.weapon} · {skin.rarity}</p>
-              <h1 className="text-2xl font-semibold">{skin.name}</h1>
-              {skin.collection && <p className="text-xs text-[var(--c-muted)] mt-0.5">{skin.collection}</p>}
-            </div>
-            {latestTx && (
-              <div className="text-right">
-                <p className="text-2xl font-mono font-bold">${latestTx.priceUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
-                <p className="text-xs font-mono text-[var(--c-muted)]">{latestTx.marketplace}</p>
-              </div>
-            )}
+    <div className="catalog-page">
+      <FichaNav />
+
+      {/* ── Header ── */}
+      <header className="ficha-head">
+        <div className="ficha-head__inner">
+          <div className="ficha-head__rail">
+            <b>02 / Ficha</b>
+            <span>Pieza observada</span>
+            <Link href="/skins" style={{ marginTop: 6, borderBottom: "1px solid var(--red)", paddingBottom: 2, width: "fit-content" }}>
+              ← Catálogo
+            </Link>
           </div>
+          <div>
+            <p className="ficha-head__weapon">
+              <span>{skin.weapon}</span>
+              <span className="ficha-rarity" style={{ "--c": rarityColor } as React.CSSProperties}>
+                <i />{skin.rarity}
+              </span>
+            </p>
+            <h1 className="ficha-head__title">
+              {skin.weapon} | <em>{skinNameOnly}</em>
+            </h1>
+            {skin.collection && <p className="ficha-head__collection">{skin.collection}</p>}
+          </div>
+          {latestTx && (
+            <div className="ficha-head__stat">
+              <span className="k">Última venta</span>
+              <span className="v">
+                ${latestTx.priceUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+              </span>
+              <span className="k">{latestTx.marketplace}</span>
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-6 space-y-8">
-        {/* Instance selector */}
-        {skin.instances.length > 1 && (
-          <section>
-            <h2 className="text-xs font-mono text-[var(--c-muted)] uppercase tracking-wider mb-3">
-              Instancias disponibles ({skin.instances.length})
-            </h2>
-            <InstanceSelector
-              instances={skin.instances}
-              selected={selectedInstance}
-              onSelect={handleInstanceChange}
-            />
-          </section>
-        )}
-
-        {/* Seller reputation */}
-        {currentSeller && (
-          <section className="border border-[var(--c-border)] rounded-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold">Vendedor actual</h2>
-              <ReputationBadge label={currentSeller.reputationLabel} />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs font-mono text-[var(--c-muted)]">Handle</p>
-                <p className="text-sm font-mono font-semibold">{currentSeller.name}</p>
-              </div>
-              <div>
-                <p className="text-xs font-mono text-[var(--c-muted)]">Transacciones</p>
-                <p className="text-sm font-mono font-semibold">{currentSeller.txCount}</p>
-              </div>
-              <div>
-                <p className="text-xs font-mono text-[var(--c-muted)]">Reputación</p>
-                <p className="text-sm font-mono font-semibold">{(currentSeller.reputation * 100).toFixed(0)}%</p>
-              </div>
-              <div>
-                <p className="text-xs font-mono text-[var(--c-muted)]">Riesgo</p>
-                <p className={`text-sm font-mono font-semibold ${currentSeller.riskScore > 60 ? "text-red-400" : currentSeller.riskScore > 30 ? "text-yellow-400" : "text-green-400"}`}>
-                  {currentSeller.riskScore}/100
-                </p>
-              </div>
-            </div>
-            {currentSeller.reputationLabel === "suspicious" && (
-              <p className="mt-3 text-xs text-red-400 font-mono border border-red-500/20 bg-red-500/5 rounded px-3 py-2">
-                ⚠ Este trader ha sido marcado como sospechoso por su historial de transacciones y sus conexiones.
-              </p>
-            )}
-          </section>
-        )}
-
-        {/* Journey graph */}
-        <section className="border border-[var(--c-border)] rounded-lg p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">Recorrido de la instancia</h2>
-            <span className="text-xs font-mono text-[var(--c-muted)]">{journey.length} transacciones</span>
+      {/* ── Cuerpo ── */}
+      <main className="ficha-body">
+        {/* Columna izquierda: plate */}
+        <figure className="ficha-plate" style={{ margin: 0 }}>
+          <div className="ficha-plate__head">
+            <span>Ficha · {(currentInstance?.id ?? skin.id).slice(-12).toUpperCase()}</span>
+            <span className="ficha-plate__live"><span className="dot--live" />Observada</span>
           </div>
-          <JourneyGraph steps={journey} />
-          <p className="text-[10px] text-[var(--c-muted)] font-mono mt-2">
-            Verde = confiable · Rojo = sospechoso · Morado = transacción
-          </p>
-        </section>
+          <div className={`ficha-plate__art${skin.imageUrl ? "" : " ficha-plate__art--empty"}`}>
+            {skin.imageUrl ? (
+              <>
+                <SkinInspect3D>
+                  <Image
+                    src={skin.imageUrl}
+                    alt={skin.name}
+                    fill
+                    sizes="(max-width: 1000px) 90vw, 480px"
+                    priority
+                    style={{ objectFit: "contain", padding: "8%" }}
+                  />
+                </SkinInspect3D>
+                <span className="ficha-plate__crop ficha-plate__crop--tl" />
+                <span className="ficha-plate__crop ficha-plate__crop--tr" />
+                <span className="ficha-plate__crop ficha-plate__crop--bl" />
+                <span className="ficha-plate__crop ficha-plate__crop--br" />
+              </>
+            ) : (
+              <span>Sin imagen</span>
+            )}
+          </div>
+          <dl className="ficha-plate__data">
+            <div>
+              <dt>Desgaste</dt>
+              <dd>{currentInstance?.wear ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Float</dt>
+              <dd>{currentInstance ? currentInstance.floatValue.toFixed(4) : "—"}</dd>
+            </div>
+            <div>
+              <dt>Instancias</dt>
+              <dd>{skin.instances.length}</dd>
+            </div>
+            <div>
+              <dt>Transacciones</dt>
+              <dd>{journey.length}</dd>
+            </div>
+          </dl>
+        </figure>
 
-        {/* Price timeline */}
-        {journey.length > 0 && (
-          <section className="border border-[var(--c-border)] rounded-lg p-5">
-            <h2 className="text-sm font-semibold mb-4">Historial de precios</h2>
-            <PriceTimeline steps={journey} />
+        {/* Columna derecha: secciones */}
+        <div>
+          {/* Instancias */}
+          {skin.instances.length > 1 && (
+            <section className="ficha-section">
+              <div className="ficha-section__head">
+                <div>
+                  <span className="ficha-section__num">A/01 · Instancias</span>
+                  <h2 className="ficha-section__title">Instancias disponibles</h2>
+                </div>
+                <span className="ficha-section__meta">{skin.instances.length} observadas</span>
+              </div>
+              <InstanceSelector
+                instances={skin.instances}
+                selected={selectedInstance}
+                onSelect={handleInstanceChange}
+              />
+            </section>
+          )}
+
+          {/* Vendedor */}
+          {currentSeller && (
+            <section className="ficha-section">
+              <div className="ficha-section__head">
+                <div>
+                  <span className="ficha-section__num">A/02 · Procedencia</span>
+                  <h2 className="ficha-section__title">Vendedor actual</h2>
+                </div>
+                <ReputationBadge label={currentSeller.reputationLabel} />
+              </div>
+              <div className="ficha-seller">
+                <dl className="ficha-seller__grid" style={{ margin: 0 }}>
+                  <div>
+                    <dt>Handle</dt>
+                    <dd>{currentSeller.name}</dd>
+                  </div>
+                  <div>
+                    <dt>Transacciones</dt>
+                    <dd>{currentSeller.txCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Reputación</dt>
+                    <dd>{(currentSeller.reputation * 100).toFixed(0)}%</dd>
+                  </div>
+                  <div>
+                    <dt>Riesgo</dt>
+                    <dd className={currentSeller.riskScore > 60 ? "risk-num--high" : currentSeller.riskScore > 30 ? "risk-num--mid" : "risk-num--low"}>
+                      {currentSeller.riskScore}/100
+                    </dd>
+                  </div>
+                </dl>
+                {currentSeller.reputationLabel === "suspicious" && (
+                  <p className="ficha-seller__warning" style={{ margin: 0 }}>
+                    ⚠ Este trader fue marcado como sospechoso por su historial de transacciones y sus conexiones.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Recorrido */}
+          <section className="ficha-section">
+            <div className="ficha-section__head">
+              <div>
+                <span className="ficha-section__num">A/03 · Recorrido</span>
+                <h2 className="ficha-section__title">Recorrido de la instancia</h2>
+              </div>
+              <span className="ficha-section__meta">{journey.length} transacciones</span>
+            </div>
+            <div className="ficha-graph">
+              <JourneyGraph3D instanceId={currentInstance?.id} steps={journey} />
+              {journey.length > 0 && (
+                <div className="ficha-graph__legend">
+                  <span><i style={{ background: "#EE2E2E" }} />Skin / riesgo</span>
+                  <span><i style={{ background: "#EDEAE2", border: "1px solid #0B0B0C" }} />Instancia</span>
+                  <span><i style={{ background: "#9a9a96" }} />Trader</span>
+                  <span><i style={{ background: "#c98a2a" }} />Marketplace</span>
+                  <span className="ficha-graph__hint">Arrastrá para rotar · click para enfocar</span>
+                </div>
+              )}
+            </div>
           </section>
-        )}
+
+          {/* Historial */}
+          {journey.length > 0 && (
+            <section className="ficha-section">
+              <div className="ficha-section__head">
+                <div>
+                  <span className="ficha-section__num">A/04 · Historial</span>
+                  <h2 className="ficha-section__title">Historial de precios</h2>
+                </div>
+              </div>
+              <PriceTimeline steps={journey} />
+            </section>
+          )}
+        </div>
       </main>
     </div>
   );

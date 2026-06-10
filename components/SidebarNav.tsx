@@ -1,7 +1,7 @@
 import type { ScanSummary } from "@/lib/types";
 import { marketplaceIds, type MarketplaceId, type WorkspaceId } from "@/lib/ui-state";
 import Link from "next/link";
-import { Activity, BarChart3, DatabaseZap, Eye, GitBranch, Radar, Scale, ShieldAlert, Star, Users, Layers } from "lucide-react";
+import { Activity, BarChart3, DatabaseZap, Eye, GitBranch, Radar, Scale, Shield, ShieldAlert, Star, Users, Layers } from "lucide-react";
 import type { ComponentType } from "react";
 
 type SidebarNavItem = {
@@ -12,6 +12,7 @@ type SidebarNavItem = {
 };
 
 const navItems: SidebarNavItem[] = [
+  { id: "dashboard", label: "Resumen", icon: Shield },
   { id: "market-radar", label: "Mercado", icon: BarChart3, badge: "live" },
   { id: "risk-cycles", label: "Ciclos de riesgo", icon: ShieldAlert },
   { id: "graph-explorer", label: "Explorador de grafo", icon: GitBranch },

@@ -16,6 +16,7 @@ import { WatchlistWorkspace } from "@/components/WatchlistWorkspace";
 import { getCompareIds, setCompareIds, toggleWatchlistId } from "@/lib/local-preferences";
 import type { Opportunity, RiskCycle, ScanSummary } from "@/lib/types";
 import { defaultFilters, serializeMarketplaces, type AppFilters, type GraphTarget, type MarketplaceId, type SignalFilter, type WorkspaceId } from "@/lib/ui-state";
+import "./dashboard.css";
 
 export default function DashboardPage() {
   const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceId>("market-radar");

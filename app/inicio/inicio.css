@@ -1302,3 +1302,65 @@
   .sg .compare__bar { grid-column: 1; }
   .sg .compare__row .num { grid-column: 2; grid-row: 2; }
 }
+
+/* ── Network Explorer 3D (grafo real Neo4j) ─────────────── */
+.sg .netx {
+  max-width: var(--maxw); margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 340px;
+  min-height: 560px;
+  background: #0E0E10;
+  border: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+@media (max-width: 900px) {
+  .sg .netx { grid-template-columns: 1fr; }
+}
+.sg .netx__canvas { position: relative; min-height: 520px; }
+.sg .netx__legend {
+  position: absolute; left: 20px; bottom: 16px;
+  display: flex; gap: 16px; flex-wrap: wrap;
+  font-size: 10px; color: rgba(255,255,255,0.4);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  pointer-events: none;
+}
+.sg .netx__legend i {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 6px; vertical-align: baseline;
+}
+.sg .netx__side {
+  border-left: 1px solid rgba(255,255,255,0.06);
+  display: flex; flex-direction: column;
+  background: rgba(255,255,255,0.02);
+}
+.sg .netx__side .inspector__head {
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 10px;
+}
+.sg .netx__side .inspector__body { flex: 1; padding: 20px; color: rgba(255,255,255,0.7); }
+.sg .netx__side .inspector__id {
+  font-family: var(--font-serif); font-size: 26px; line-height: 1.1;
+  letter-spacing: -.02em; color: #f0f0f4; margin-bottom: 2px;
+}
+.sg .netx__side .inspector__type {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.35); text-transform: uppercase;
+  letter-spacing: .07em; margin-bottom: 16px;
+}
+.sg .netx__side .inspector__list { display: flex; flex-direction: column; margin: 0 0 14px; }
+.sg .netx__side .inspector__list > div {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.sg .netx__side .inspector__list dt {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.28); text-transform: uppercase; letter-spacing: .06em;
+}
+.sg .netx__side .inspector__list dd {
+  margin: 0; font-family: var(--font-mono); font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;
+}
+.sg .netx__side .inspector__note { font-size: 11px; line-height: 1.65; color: rgba(255,255,255,0.35); }
+.sg .netx__side .inspector__foot {
+  padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 10px;
+}
