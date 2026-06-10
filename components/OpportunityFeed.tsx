@@ -85,18 +85,23 @@ export function OpportunityFeed({
       .finally(() => setLoading(false));
   }, [filters]);
 
+  const panelHeader = (
+    <div className="panel-header">
+      <div>
+        <h2>Oportunidades de mercado</h2>
+        <p>Ordenadas por spread, confianza y calidad del camino de traders.</p>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="table-panel">
-        <div className="panel-header">
-          <div>
-            <h2>Opportunity Feed</h2>
-            <p>Ranked by spread, confidence, liquidity and trader path quality.</p>
-          </div>
-        </div>
-        <div className="feed-loading">
-          <div className="loading-spinner" />
-          <span>Cargando oportunidades...</span>
+      <div className="table-panel" aria-busy="true" aria-label="Cargando oportunidades">
+        {panelHeader}
+        <div className="feed-skeleton">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton-row" />
+          ))}
         </div>
       </div>
     );
@@ -105,18 +110,10 @@ export function OpportunityFeed({
   if (error) {
     return (
       <div className="table-panel">
-        <div className="panel-header">
-          <div>
-            <h2>Opportunity Feed</h2>
-            <p>Ranked by spread, confidence, liquidity and trader path quality.</p>
-          </div>
-        </div>
-        <div className="feed-error">
+        {panelHeader}
+        <div className="feed-error" role="alert">
           <p>{error}</p>
-          <button
-            className="ghost-action text-sm"
-            onClick={() => window.location.reload()}
-          >
+          <button className="ghost-action" onClick={() => window.location.reload()}>
             Reintentar
           </button>
         </div>
@@ -127,14 +124,9 @@ export function OpportunityFeed({
   if (opportunities.length === 0) {
     return (
       <div className="table-panel">
-        <div className="panel-header">
-          <div>
-            <h2>Opportunity Feed</h2>
-            <p>Ranked by spread, confidence, liquidity and trader path quality.</p>
-          </div>
-        </div>
+        {panelHeader}
         <div className="feed-empty">
-          <p>No se encontraron oportunidades con los parametros actuales.</p>
+          <p>No se encontraron oportunidades con los parámetros actuales.</p>
         </div>
       </div>
     );

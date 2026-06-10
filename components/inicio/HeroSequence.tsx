@@ -121,6 +121,7 @@ export default function HeroSequence() {
     /* ── Build network ── */
     const positions: THREE.Vector3[] = [];
     const meshes: THREE.Mesh[] = [];
+    const edgeGeos: THREE.BufferGeometry[] = [];
 
     for (const { color, size, count } of NODE_DEFS) {
       const mat = new THREE.MeshPhongMaterial({
@@ -164,6 +165,7 @@ export default function HeroSequence() {
         if (positions[i].distanceTo(positions[j]) < CONNECT_DIST) {
           const isRisk = Math.random() < 0.08;
           const geo = new THREE.BufferGeometry().setFromPoints([positions[i], positions[j]]);
+          edgeGeos.push(geo);
           scene.add(new THREE.Line(geo, isRisk ? riskMat : edgeMat));
         }
       }
@@ -212,6 +214,10 @@ export default function HeroSequence() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', onResize);
+      meshes.forEach((m) => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
+      edgeGeos.forEach((g) => g.dispose());
+      edgeMat.dispose();
+      riskMat.dispose();
       renderer.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };

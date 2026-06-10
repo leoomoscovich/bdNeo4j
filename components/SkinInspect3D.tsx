@@ -55,6 +55,7 @@ export function SkinInspect3D({ imageUrl, alt }: Props) {
     scene.add(mesh);
 
     /* ── Load texture ── */
+    let fadeInterval: ReturnType<typeof setInterval> | null = null;
     const loader = new THREE.TextureLoader();
     loader.crossOrigin = "anonymous";
     loader.load(
@@ -63,12 +64,14 @@ export function SkinInspect3D({ imageUrl, alt }: Props) {
         texture.colorSpace = THREE.SRGBColorSpace;
         mat.map = texture;
         mat.needsUpdate = true;
-        /* Fade in */
         let opacity = 0;
-        const fadeIn = setInterval(() => {
+        fadeInterval = setInterval(() => {
           opacity = Math.min(1, opacity + 0.06);
           mat.opacity = opacity;
-          if (opacity >= 1) clearInterval(fadeIn);
+          if (opacity >= 1) {
+            clearInterval(fadeInterval!);
+            fadeInterval = null;
+          }
         }, 16);
       },
       undefined,
@@ -129,9 +132,13 @@ export function SkinInspect3D({ imageUrl, alt }: Props) {
 
     return () => {
       cancelAnimationFrame(raf);
+      if (fadeInterval !== null) clearInterval(fadeInterval);
       ro.disconnect();
       mount.removeEventListener("pointermove", onPointerMove);
       mount.removeEventListener("pointerleave", onPointerLeave);
+      geo.dispose();
+      mat.dispose();
+      if (mat.map) mat.map.dispose();
       renderer.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
