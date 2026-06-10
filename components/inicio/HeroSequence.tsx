@@ -1,8 +1,18 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import * as THREE from 'three';
 
-const FRAMES = 192;
+/* Editorial palette — matches the rest of the system */
+const NODE_DEFS = [
+  { color: 0xEE2E2E, size: 3.2, count: 8  },  // skin
+  { color: 0x9a9a96, size: 2.0, count: 20 },  // trader
+  { color: 0xc98a2a, size: 3.8, count: 5  },  // marketplace
+  { color: 0xEDEAE2, size: 1.6, count: 15 },  // instance
+  { color: 0x5b5b60, size: 1.0, count: 12 },  // transaction
+];
+
+const CONNECT_DIST = 28;
 
 type QuestionSpot = {
   text: string;
@@ -66,136 +76,156 @@ function QuestionText({ progress, spot }: { progress: ReturnType<typeof useScrol
 
 export default function HeroSequence() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const images = useRef<HTMLImageElement[]>([]);
-  const drawnFrame = useRef(-1);
-  const raf = useRef(0);
+  const mountRef    = useRef<HTMLDivElement>(null);
+  const rafRef      = useRef(0);
 
-  // Fade out scroll hint as user scrolls into sequence
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', '15% start'] });
-  const hintOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
+  /* scrollYProgress covers the full 300vh hero height */
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end end'],
+  });
+  const hintOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
 
   // Question circles + closing line, tracking scroll over the full sequence
   const { scrollYProgress: heroProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const mount = mountRef.current as HTMLDivElement;
+    const container = containerRef.current as HTMLDivElement;
+    if (!mount || !container) return;
 
-    function resize() {
-      if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      redraw();
-    }
+    /* ── Scene ── */
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0B0B0C, 0.007);
 
-    function drawFrame(img: HTMLImageElement) {
-      if (!canvas || !img.complete || img.naturalWidth === 0) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      const cw = canvas.width, ch = canvas.height;
-      const iw = img.naturalWidth, ih = img.naturalHeight;
-      const scale = Math.max(cw / iw, ch / ih);
-      const sw = iw * scale, sh = ih * scale;
-      ctx.clearRect(0, 0, cw, ch);
-      ctx.drawImage(img, (cw - sw) / 2, (ch - sh) / 2, sw, sh);
-    }
+    /* ── Camera ── */
+    const camera = new THREE.PerspectiveCamera(58, mount.clientWidth / mount.clientHeight, 1, 500);
+    camera.position.set(0, 0, 88);
 
-    function redraw() {
-      const f = Math.max(0, drawnFrame.current);
-      const img = images.current[f];
-      if (img) drawFrame(img);
-    }
+    /* ── Renderer ── */
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(mount.clientWidth, mount.clientHeight);
+    renderer.setClearColor(0x0B0B0C, 1);
+    mount.appendChild(renderer.domElement);
 
-    function getFrame() {
-      const container = containerRef.current;
-      if (!container) return 0;
-      // 200vh scroll space = window.innerHeight * 2
-      const scrolled = window.scrollY - container.offsetTop;
-      const scrollSpace = window.innerHeight * 2;
-      const progress = Math.max(0, Math.min(1, scrolled / scrollSpace));
-      return Math.round(progress * (FRAMES - 1));
-    }
+    /* ── Lights ── */
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const key = new THREE.DirectionalLight(0xfff2e2, 1.1);
+    key.position.set(1.2, 1.8, 1.0);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffe2d2, 0.4);
+    fill.position.set(-1, -0.5, 0.5);
+    scene.add(fill);
 
-    function onScroll() {
-      const frame = getFrame();
-      if (frame === drawnFrame.current) return;
-      drawnFrame.current = frame;
-      const img = images.current[frame];
-      if (img?.complete && img.naturalWidth > 0) {
-        cancelAnimationFrame(raf.current);
-        raf.current = requestAnimationFrame(() => drawFrame(img));
+    /* ── Build network ── */
+    const positions: THREE.Vector3[] = [];
+    const meshes: THREE.Mesh[] = [];
+
+    for (const { color, size, count } of NODE_DEFS) {
+      const mat = new THREE.MeshPhongMaterial({
+        color,
+        emissive: new THREE.Color(color).multiplyScalar(0.12),
+        shininess: 55,
+        transparent: true,
+        opacity: 0.88,
+      });
+
+      for (let i = 0; i < count; i++) {
+        /* Distribute in a flattened sphere */
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = Math.acos(2 * Math.random() - 1);
+        const r     = 18 + Math.random() * 28;
+        const pos = new THREE.Vector3(
+          r * Math.sin(phi) * Math.cos(theta),
+          r * Math.sin(phi) * Math.sin(theta) * 0.55,
+          r * Math.cos(phi),
+        );
+
+        const geo  = new THREE.SphereGeometry(size, 9, 7);
+        const mesh = new THREE.Mesh(geo, mat.clone());
+        mesh.position.copy(pos);
+        scene.add(mesh);
+        positions.push(pos);
+        meshes.push(mesh);
       }
     }
 
-    resize();
-    window.addEventListener('resize', resize);
-    window.addEventListener('scroll', onScroll, { passive: true });
+    /* ── Edges ── */
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: 0xEDEAE2, transparent: true, opacity: 0.10,
+    });
+    const riskMat = new THREE.LineBasicMaterial({
+      color: 0xEE2E2E, transparent: true, opacity: 0.40,
+    });
 
-    // Progressive preload: first 20 immediately, then rest in background
-    const preloadAll = () => {
-      for (let i = 0; i < FRAMES; i++) {
-        if (images.current[i]) continue;
-        const img = new Image();
-        const num = String(i + 1).padStart(5, '0');
-        img.src = `/sequence/${num}.webp`;
-        img.onload = () => {
-          images.current[i] = img;
-          if (i === drawnFrame.current || drawnFrame.current < 0) {
-            redraw();
-          }
-        };
-        images.current[i] = img;
-      }
-    };
-
-    // Load first 30 frames synchronously priority
-    for (let i = 0; i < 30; i++) {
-      const img = new Image();
-      const num = String(i + 1).padStart(5, '0');
-      img.src = `/sequence/${num}.webp`;
-      img.onload = () => {
-        images.current[i] = img;
-        if (i === 0 && drawnFrame.current < 0) {
-          drawnFrame.current = 0;
-          drawFrame(img);
-        } else if (i === drawnFrame.current) {
-          drawFrame(img);
+    for (let i = 0; i < positions.length; i++) {
+      for (let j = i + 1; j < positions.length; j++) {
+        if (positions[i].distanceTo(positions[j]) < CONNECT_DIST) {
+          const isRisk = Math.random() < 0.08;
+          const geo = new THREE.BufferGeometry().setFromPoints([positions[i], positions[j]]);
+          scene.add(new THREE.Line(geo, isRisk ? riskMat : edgeMat));
         }
-      };
-      images.current[i] = img;
+      }
     }
 
-    // Rest after a tick
-    setTimeout(preloadAll, 100);
+    /* ── Scroll progress helper ── */
+    function getProgress() {
+      const scrolled = window.scrollY - (container?.offsetTop ?? 0);
+      const range    = window.innerHeight * 2;
+      return Math.max(0, Math.min(1, scrolled / range));
+    }
+
+    /* ── Resize ── */
+    function onResize() {
+      const w = mount.clientWidth, h = mount.clientHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', onResize);
+
+    /* ── Animation loop ── */
+    let time = 0;
+    function animate() {
+      rafRef.current = requestAnimationFrame(animate);
+      time += 0.004;
+
+      const p = getProgress();
+      camera.position.z = 88 - p * 45;
+      camera.position.y = p * 6;
+
+      /* whole-scene rotation: slow drift + scroll-driven spin */
+      scene.rotation.y = time * 0.12 + p * Math.PI * 0.45;
+      scene.rotation.x = p * 0.18;
+
+      /* node pulse */
+      meshes.forEach((mesh, idx) => {
+        const s = 1 + Math.sin(time * 1.6 + idx * 0.62) * 0.055;
+        mesh.scale.setScalar(s);
+      });
+
+      renderer.render(scene, camera);
+    }
+    animate();
 
     return () => {
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(raf.current);
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize', onResize);
+      renderer.dispose();
+      if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      style={{ position: 'relative', height: 'calc(100vh + 200vh)' }}
-    >
+    <div ref={containerRef} style={{ position: 'relative', height: 'calc(100vh + 200vh)' }}>
       {/* Sticky viewport */}
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflow: 'hidden',
-          background: '#0B0B0C',
-        }}
-      >
-        {/* Canvas frame display */}
-        <canvas
-          ref={canvasRef}
-          style={{ display: 'block', width: '100%', height: '100%' }}
-        />
+      <div style={{
+        position: 'sticky', top: 0, height: '100vh',
+        overflow: 'hidden', background: '#0B0B0C',
+      }}>
+        {/* Three.js mount target */}
+        <div ref={mountRef} style={{ position: 'absolute', inset: 0 }} />
 
         {/* Trust questions, appearing one by one in the corners as the scene assembles */}
         {QUESTIONS.map((spot) => (
@@ -240,56 +270,57 @@ export default function HeroSequence() {
           </a>
           <div className="topnav__right">
             <a className="topnav__link" href="#senales">Preview</a>
-            <a className="btn btn--red btn--sm" href="#cierre">Dashboard</a>
+            <a className="btn btn--red btn--sm" href="/dashboard">Dashboard</a>
           </div>
         </nav>
 
+        {/* Center overlay: minimal label */}
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex',
+          flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <p style={{
+            fontFamily: 'var(--font-mono)', fontSize: '10px',
+            letterSpacing: '0.18em', textTransform: 'uppercase',
+            color: 'rgba(237,234,226,0.38)', marginBottom: 0,
+          }}>
+            Red de compradores · Neo4j · En vivo
+          </p>
+        </div>
+
         {/* Scroll hint */}
-        <motion.div
-          style={{
-            position: 'absolute',
-            bottom: 36,
-            left: '50%',
-            translateX: '-50%',
-            opacity: hintOpacity,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 10,
-            color: 'rgba(255,255,255,0.55)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            pointerEvents: 'none',
-          }}
-        >
-          <span>Scroll para ensamblar</span>
-          {/* Mouse scroll icon */}
+        <motion.div style={{
+          position: 'absolute', bottom: 36, left: '50%', translateX: '-50%',
+          opacity: hintOpacity,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          color: 'rgba(255,255,255,0.5)',
+          fontFamily: 'var(--font-mono)', fontSize: '10px',
+          letterSpacing: '0.12em', textTransform: 'uppercase',
+          pointerEvents: 'none',
+        }}>
+          <span>Scroll para explorar</span>
           <svg width="18" height="28" viewBox="0 0 18 28" fill="none">
-            <rect x="1" y="1" width="16" height="26" rx="8" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" />
+            <rect x="1" y="1" width="16" height="26" rx="8"
+              stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" />
             <motion.rect
               x="8" y="6" width="2" height="5" rx="1"
-              fill="rgba(255,255,255,0.6)"
+              fill="rgba(255,255,255,0.55)"
               animate={{ y: [6, 11, 6] }}
               transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
             />
           </svg>
         </motion.div>
 
-        {/* Progress bar at bottom */}
+        {/* Progress bar */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: '2px', background: 'rgba(255,255,255,0.08)',
+          height: '2px', background: 'rgba(255,255,255,0.07)',
         }}>
-          <motion.div
-            style={{
-              height: '100%',
-              background: 'var(--red)',
-              scaleX: scrollYProgress,
-              transformOrigin: 'left',
-            }}
-          />
+          <motion.div style={{
+            height: '100%', background: 'var(--red)',
+            scaleX: scrollYProgress, transformOrigin: 'left',
+          }} />
         </div>
       </div>
     </div>
