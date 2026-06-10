@@ -3,16 +3,12 @@ import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import * as THREE from 'three';
 
-/* Editorial palette — matches the rest of the system */
-const NODE_DEFS = [
-  { color: 0xEE2E2E, size: 3.2, count: 8  },  // skin
-  { color: 0x9a9a96, size: 2.0, count: 20 },  // trader
-  { color: 0xc98a2a, size: 3.8, count: 5  },  // marketplace
-  { color: 0xEDEAE2, size: 1.6, count: 15 },  // instance
-  { color: 0x5b5b60, size: 1.0, count: 12 },  // transaction
-];
-
-const CONNECT_DIST = 28;
+/* ─── Config ──────────────────────────────────────────────── */
+const PARTICLE_COUNT  = 180;
+const SPREAD          = 52;          // half-extent of the volume
+const CONNECT_DIST    = 18;          // max distance to draw an edge
+const MAX_EDGES       = 320;         // cap to avoid overdraw
+const RED_NODE_RATIO  = 0.07;        // fraction that are red (high-degree)
 
 type QuestionSpot = {
   text: string;
@@ -76,31 +72,23 @@ function QuestionText({ progress, spot }: { progress: ReturnType<typeof useScrol
 
 export default function HeroSequence() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mountRef    = useRef<HTMLDivElement>(null);
-  const rafRef      = useRef(0);
+  const mountRef     = useRef<HTMLDivElement>(null);
+  const rafRef       = useRef(0);
+  const mouseRef     = useRef({ x: 0, y: 0 });
 
-  /* scrollYProgress covers the full 300vh hero height */
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end end'],
   });
-  const hintOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
+  const hintOpacity = useTransform(scrollYProgress, [0, 0.14], [1, 0]);
 
   // Question circles + closing line, tracking scroll over the full sequence
   const { scrollYProgress: heroProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
 
   useEffect(() => {
-    const mount = mountRef.current as HTMLDivElement;
+    const mount     = mountRef.current as HTMLDivElement;
     const container = containerRef.current as HTMLDivElement;
     if (!mount || !container) return;
-
-    /* ── Scene ── */
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0B0B0C, 0.007);
-
-    /* ── Camera ── */
-    const camera = new THREE.PerspectiveCamera(58, mount.clientWidth / mount.clientHeight, 1, 500);
-    camera.position.set(0, 0, 88);
 
     /* ── Renderer ── */
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -109,74 +97,97 @@ export default function HeroSequence() {
     renderer.setClearColor(0x0B0B0C, 1);
     mount.appendChild(renderer.domElement);
 
-    /* ── Lights ── */
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const key = new THREE.DirectionalLight(0xfff2e2, 1.1);
-    key.position.set(1.2, 1.8, 1.0);
-    scene.add(key);
-    const fill = new THREE.DirectionalLight(0xffe2d2, 0.4);
-    fill.position.set(-1, -0.5, 0.5);
-    scene.add(fill);
+    /* ── Scene / Camera / Fog ── */
+    const scene  = new THREE.Scene();
+    scene.fog    = new THREE.FogExp2(0x0B0B0C, 0.012);
+    const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.5, 300);
+    camera.position.set(0, 0, 72);
 
-    /* ── Build network ── */
+    /* ── Build particle positions ── */
     const positions: THREE.Vector3[] = [];
-    const meshes: THREE.Mesh[] = [];
-    const edgeGeos: THREE.BufferGeometry[] = [];
+    const isRed: boolean[] = [];
 
-    for (const { color, size, count } of NODE_DEFS) {
-      const mat = new THREE.MeshPhongMaterial({
-        color,
-        emissive: new THREE.Color(color).multiplyScalar(0.12),
-        shininess: 55,
-        transparent: true,
-        opacity: 0.88,
-      });
-
-      for (let i = 0; i < count; i++) {
-        /* Distribute in a flattened sphere */
-        const theta = Math.random() * Math.PI * 2;
-        const phi   = Math.acos(2 * Math.random() - 1);
-        const r     = 18 + Math.random() * 28;
-        const pos = new THREE.Vector3(
-          r * Math.sin(phi) * Math.cos(theta),
-          r * Math.sin(phi) * Math.sin(theta) * 0.55,
-          r * Math.cos(phi),
-        );
-
-        const geo  = new THREE.SphereGeometry(size, 9, 7);
-        const mesh = new THREE.Mesh(geo, mat.clone());
-        mesh.position.copy(pos);
-        scene.add(mesh);
-        positions.push(pos);
-        meshes.push(mesh);
-      }
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi   = Math.acos(2 * Math.random() - 1);
+      const r     = 12 + Math.random() * SPREAD;
+      positions.push(new THREE.Vector3(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta) * 0.5,
+        r * Math.cos(phi),
+      ));
+      isRed.push(Math.random() < RED_NODE_RATIO);
     }
 
-    /* ── Edges ── */
-    const edgeMat = new THREE.LineBasicMaterial({
-      color: 0xEDEAE2, transparent: true, opacity: 0.10,
-    });
-    const riskMat = new THREE.LineBasicMaterial({
-      color: 0xEE2E2E, transparent: true, opacity: 0.40,
+    /* ── Points geometry (one draw call for all particles) ── */
+    const posArray = new Float32Array(PARTICLE_COUNT * 3);
+    const colArray = new Float32Array(PARTICLE_COUNT * 3);
+    const redColor  = new THREE.Color(0xEE2E2E);
+    const baseColor = new THREE.Color(0x9a9a96);
+
+    positions.forEach((p, i) => {
+      posArray[i * 3]     = p.x;
+      posArray[i * 3 + 1] = p.y;
+      posArray[i * 3 + 2] = p.z;
+      const c = isRed[i] ? redColor : baseColor;
+      colArray[i * 3]     = c.r;
+      colArray[i * 3 + 1] = c.g;
+      colArray[i * 3 + 2] = c.b;
     });
 
-    for (let i = 0; i < positions.length; i++) {
-      for (let j = i + 1; j < positions.length; j++) {
-        if (positions[i].distanceTo(positions[j]) < CONNECT_DIST) {
-          const isRisk = Math.random() < 0.08;
-          const geo = new THREE.BufferGeometry().setFromPoints([positions[i], positions[j]]);
-          edgeGeos.push(geo);
-          scene.add(new THREE.Line(geo, isRisk ? riskMat : edgeMat));
+    const pointsGeo = new THREE.BufferGeometry();
+    pointsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    pointsGeo.setAttribute('color',    new THREE.BufferAttribute(colArray, 3));
+    const pointsMat = new THREE.PointsMaterial({
+      size: 1.6,
+      vertexColors: true,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.9,
+    });
+    scene.add(new THREE.Points(pointsGeo, pointsMat));
+
+    /* ── Edges (plexus lines) ── */
+    const edgePositions: number[] = [];
+    const edgeColors:    number[] = [];
+    const edgeGeo = new THREE.BufferGeometry();
+    let   edgeCount = 0;
+
+    for (let i = 0; i < positions.length && edgeCount < MAX_EDGES; i++) {
+      for (let j = i + 1; j < positions.length && edgeCount < MAX_EDGES; j++) {
+        const dist = positions[i].distanceTo(positions[j]);
+        if (dist < CONNECT_DIST) {
+          const opacity = 1 - dist / CONNECT_DIST;   // fade by distance
+          const isEdgeRed = isRed[i] || isRed[j];
+          const r = isEdgeRed ? 0.93 : 0.6;
+          const g = isEdgeRed ? 0.18 : 0.6;
+          const b = isEdgeRed ? 0.18 : 0.6;
+          const a = isEdgeRed ? opacity * 0.6 : opacity * 0.18;
+
+          edgePositions.push(positions[i].x, positions[i].y, positions[i].z);
+          edgePositions.push(positions[j].x, positions[j].y, positions[j].z);
+          // encode alpha in color brightness (WebGL lines don't support per-vertex alpha natively)
+          edgeColors.push(r * a, g * a, b * a);
+          edgeColors.push(r * a, g * a, b * a);
+          edgeCount++;
         }
       }
     }
 
-    /* ── Scroll progress helper ── */
-    function getProgress() {
-      const scrolled = window.scrollY - (container?.offsetTop ?? 0);
-      const range    = window.innerHeight * 2;
-      return Math.max(0, Math.min(1, scrolled / range));
+    edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(edgePositions, 3));
+    edgeGeo.setAttribute('color',    new THREE.Float32BufferAttribute(edgeColors, 3));
+    const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 1 });
+    const lines   = new THREE.LineSegments(edgeGeo, lineMat);
+    scene.add(lines);
+
+    /* ── Mouse parallax ── */
+    function onMouseMove(e: MouseEvent) {
+      mouseRef.current = {
+        x: (e.clientX / window.innerWidth  - 0.5) * 2,
+        y: (e.clientY / window.innerHeight - 0.5) * 2,
+      };
     }
+    window.addEventListener('mousemove', onMouseMove);
 
     /* ── Resize ── */
     function onResize() {
@@ -187,25 +198,34 @@ export default function HeroSequence() {
     }
     window.addEventListener('resize', onResize);
 
+    /* ── Scroll progress helper ── */
+    function getProgress() {
+      const scrolled = window.scrollY - (container.offsetTop ?? 0);
+      return Math.max(0, Math.min(1, scrolled / (window.innerHeight * 2)));
+    }
+
     /* ── Animation loop ── */
     let time = 0;
     function animate() {
       rafRef.current = requestAnimationFrame(animate);
-      time += 0.004;
+      time += 0.003;
 
       const p = getProgress();
-      camera.position.z = 88 - p * 45;
-      camera.position.y = p * 6;
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
 
-      /* whole-scene rotation: slow drift + scroll-driven spin */
-      scene.rotation.y = time * 0.12 + p * Math.PI * 0.45;
-      scene.rotation.x = p * 0.18;
+      /* Scroll-driven camera push */
+      camera.position.z = 72 - p * 38;
+      camera.position.y = p * 4;
 
-      /* node pulse */
-      meshes.forEach((mesh, idx) => {
-        const s = 1 + Math.sin(time * 1.6 + idx * 0.62) * 0.055;
-        mesh.scale.setScalar(s);
-      });
+      /* Mouse parallax — subtle tilt */
+      camera.position.x += (mx * 6 - camera.position.x) * 0.04;
+      camera.position.y += (-my * 4 - camera.position.y + p * 4) * 0.04;
+      camera.lookAt(0, 0, 0);
+
+      /* Slow scene rotation */
+      scene.rotation.y = time * 0.08 + p * Math.PI * 0.35;
+      scene.rotation.x = p * 0.12;
 
       renderer.render(scene, camera);
     }
@@ -213,11 +233,12 @@ export default function HeroSequence() {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', onResize);
-      meshes.forEach((m) => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
-      edgeGeos.forEach((g) => g.dispose());
-      edgeMat.dispose();
-      riskMat.dispose();
+      pointsGeo.dispose();
+      pointsMat.dispose();
+      edgeGeo.dispose();
+      lineMat.dispose();
       renderer.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
@@ -230,8 +251,14 @@ export default function HeroSequence() {
         position: 'sticky', top: 0, height: '100vh',
         overflow: 'hidden', background: '#0B0B0C',
       }}>
-        {/* Three.js mount target */}
+        {/* Three.js canvas */}
         <div ref={mountRef} style={{ position: 'absolute', inset: 0 }} />
+
+        {/* Gradient overlay — keeps text legible */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse 70% 60% at 50% 50%, transparent 40%, rgba(11,11,12,0.55) 100%)',
+        }} />
 
         {/* Trust questions, appearing one by one in the corners as the scene assembles */}
         {QUESTIONS.map((spot) => (
@@ -280,19 +307,31 @@ export default function HeroSequence() {
           </div>
         </nav>
 
-        {/* Center overlay: minimal label */}
+        {/* Center label */}
         <div style={{
-          position: 'absolute', inset: 0, display: 'flex',
-          flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          pointerEvents: 'none',
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none', gap: 10,
         }}>
-          <p style={{
-            fontFamily: 'var(--font-mono)', fontSize: '10px',
-            letterSpacing: '0.18em', textTransform: 'uppercase',
-            color: 'rgba(237,234,226,0.38)', marginBottom: 0,
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            border: '1px solid rgba(237,234,226,0.12)',
+            padding: '5px 14px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: 'rgba(237,234,226,0.4)',
           }}>
+            <span style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: '#EE2E2E',
+              boxShadow: '0 0 6px #EE2E2E',
+              flexShrink: 0,
+            }} />
             Red de compradores · Neo4j · En vivo
-          </p>
+          </div>
         </div>
 
         {/* Scroll hint */}
@@ -300,20 +339,20 @@ export default function HeroSequence() {
           position: 'absolute', bottom: 36, left: '50%', translateX: '-50%',
           opacity: hintOpacity,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-          color: 'rgba(255,255,255,0.5)',
-          fontFamily: 'var(--font-mono)', fontSize: '10px',
-          letterSpacing: '0.12em', textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.35)',
+          fontFamily: 'var(--font-mono)', fontSize: '9px',
+          letterSpacing: '0.16em', textTransform: 'uppercase',
           pointerEvents: 'none',
         }}>
           <span>Scroll para explorar</span>
-          <svg width="18" height="28" viewBox="0 0 18 28" fill="none">
-            <rect x="1" y="1" width="16" height="26" rx="8"
-              stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" />
+          <svg width="16" height="26" viewBox="0 0 16 26" fill="none">
+            <rect x="1" y="1" width="14" height="24" rx="7"
+              stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
             <motion.rect
-              x="8" y="6" width="2" height="5" rx="1"
-              fill="rgba(255,255,255,0.55)"
-              animate={{ y: [6, 11, 6] }}
-              transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+              x="7" y="5" width="2" height="5" rx="1"
+              fill="rgba(255,255,255,0.4)"
+              animate={{ y: [5, 10, 5] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
             />
           </svg>
         </motion.div>
@@ -321,10 +360,10 @@ export default function HeroSequence() {
         {/* Progress bar */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: '2px', background: 'rgba(255,255,255,0.07)',
+          height: '1px', background: 'rgba(255,255,255,0.06)',
         }}>
           <motion.div style={{
-            height: '100%', background: 'var(--red)',
+            height: '100%', background: '#EE2E2E',
             scaleX: scrollYProgress, transformOrigin: 'left',
           }} />
         </div>
