@@ -25,14 +25,16 @@ export function NodeDetailsPanel({ node }: NodeDetailsPanelProps) {
 
   return (
     <aside className="details">
-      <div className="details-title">{current?.label ?? "Selecciona un nodo"}</div>
-      <p>{node ? `Tipo: ${node.type}` : "Click en un nodo del grafo para ver propiedades y timeline."}</p>
+      <div className="details-title">{current?.label ?? "Sin selección"}</div>
+      <p>{node ? `Tipo: ${node.type}` : "Click en un nodo del grafo para ver sus propiedades y timeline."}</p>
       {current ? <div className="property-list">{Object.entries(current.properties).map(([key, value]) => <span key={key}><strong>{key}</strong>{String(value)}</span>)}</div> : null}
-      <div className="timeline">
-        {(current?.timeline.length ? current.timeline : [
-          { title: "Historial", description: "Las transacciones relacionadas apareceran aca." },
-        ]).map((event) => <div className="event" key={`${event.title}-${event.description}`}><strong>{event.title}</strong><span>{event.description}</span></div>)}
-      </div>
+      {current && (
+        <div className="timeline">
+          {(current.timeline.length ? current.timeline : [
+            { title: "Historial", description: "Las transacciones relacionadas apareceran aca." },
+          ]).map((event) => <div className="event" key={`${event.title}-${event.description}`}><strong>{event.title}</strong><span>{event.description}</span></div>)}
+        </div>
+      )}
     </aside>
   );
 }

@@ -154,39 +154,41 @@ export function GraphInsightPanel({ selectedOpportunity, selectedRiskCycle, grap
       {!loading && !error && !graph && <div className="empty-state">Sin datos de grafo para esta instancia.</div>}
 
       {!loading && !error && visibleGraph && (
-        <>
-          <Graph3D
-            graph={visibleGraph}
-            height={420}
-            riskMode={isRiskMode}
-            onNodeClick={handleNodeClick}
-          />
-          <div className="graph3d-legend">
-            {LEGEND.filter((item) => presentTypes.has(item.type)).map((item) => {
-              const off = hiddenTypes.has(item.type);
-              return (
-                <button
-                  key={item.type}
-                  type="button"
-                  onClick={() => toggleType(item.type)}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                    background: "none", border: "none", cursor: "pointer",
-                    padding: 0, font: "inherit", color: "inherit",
-                    opacity: off ? 0.35 : 1,
-                    textDecoration: off ? "line-through" : "none",
-                  }}
-                  aria-pressed={!off}
-                  title={off ? `Mostrar ${item.label}` : `Ocultar ${item.label}`}
-                >
-                  <i style={{ background: item.color }} />{item.label}
-                </button>
-              );
-            })}
-            <span className="graph3d-hint">Click en un nodo expande sus vecinos · click en la leyenda filtra · arrastrá para rotar</span>
+        <div className="insight-body">
+          <div className="insight-graph">
+            <Graph3D
+              graph={visibleGraph}
+              height={560}
+              riskMode={isRiskMode}
+              onNodeClick={handleNodeClick}
+            />
+            <div className="graph3d-legend">
+              {LEGEND.filter((item) => presentTypes.has(item.type)).map((item) => {
+                const off = hiddenTypes.has(item.type);
+                return (
+                  <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => toggleType(item.type)}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      background: "none", border: "none", cursor: "pointer",
+                      padding: 0, font: "inherit", color: "inherit",
+                      opacity: off ? 0.35 : 1,
+                      textDecoration: off ? "line-through" : "none",
+                    }}
+                    aria-pressed={!off}
+                    title={off ? `Mostrar ${item.label}` : `Ocultar ${item.label}`}
+                  >
+                    <i style={{ background: item.color }} />{item.label}
+                  </button>
+                );
+              })}
+              <span className="graph3d-hint">Click en un nodo expande sus vecinos · click en la leyenda filtra · arrastrá para rotar</span>
+            </div>
           </div>
-          {inspectedNode && <NodeDetailsPanel node={inspectedNode} />}
-        </>
+          <NodeDetailsPanel node={inspectedNode} />
+        </div>
       )}
     </div>
   );

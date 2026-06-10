@@ -32,8 +32,41 @@ const NODE_SIZE: Record<string, number> = {
   price: 5,
 };
 
+/* Tipos cuyo nombre vale la pena mostrar siempre como etiqueta flotante. */
+const LABELED_TYPES = new Set(["skin", "trader", "marketplace", "instance"]);
+
 type FGNode = GraphNode & { x?: number; y?: number; z?: number };
 type FGLink = { source: string; target: string; label: string; risk: boolean };
+
+/* Sprite de texto (canvas -> textura) para etiquetar nodos sin saturar la escena. */
+function makeLabelSprite(text: string, color: string): THREE.Sprite {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  const fontSize = 28;
+  ctx.font = `${fontSize}px monospace`;
+  const padding = 12;
+  const textWidth = ctx.measureText(text).width;
+  canvas.width = textWidth + padding * 2;
+  canvas.height = fontSize + padding * 2;
+
+  ctx.font = `${fontSize}px monospace`;
+  ctx.fillStyle = "rgba(14,14,16,0.78)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+  ctx.fillStyle = "#EDEAE2";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, padding, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const material = new THREE.SpriteMaterial({ map: texture, depthWrite: false, transparent: true });
+  const sprite = new THREE.Sprite(material);
+  const scale = 0.18;
+  sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
+  return sprite;
+}
 
 type Graph3DProps = {
   graph: GraphResponse;
@@ -87,7 +120,11 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
     let tries = 0;
     let userTookOver = false;
     const container = containerRef.current;
-    const onPointerDown = () => { userTookOver = true; };
+    const onPointerDown = () => {
+      userTookOver = true;
+      const controls = fgRef.current?.controls();
+      if (controls) controls.autoRotate = false;
+    };
     container?.addEventListener("pointerdown", onPointerDown);
 
     const id = setInterval(() => {
@@ -97,6 +134,7 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
         const scene = fg.scene();
         if (scene && !scene.userData.sgLit) {
           scene.userData.sgLit = true;
+          scene.fog = new THREE.FogExp2(0x0e0e10, 0.0022);
           scene.add(new THREE.AmbientLight(0xffffff, 1.1));
           const key = new THREE.DirectionalLight(0xfff2e2, 0.9);
           key.position.set(1, 1, 1);
@@ -106,7 +144,7 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
           scene.add(fill);
         }
         if (tries > 8) {
-          if (!userTookOver) fg.zoomToFit(500, 50);
+          if (!userTookOver) fg.zoomToFit(500, 24);
           clearInterval(id);
         }
       } else if (tries > 40) {
@@ -142,29 +180,46 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
 
     const mesh = new THREE.Mesh(geo, mat);
     if (risky) pulseMeshes.current.push(mesh);
+
+    if (LABELED_TYPES.has(node.type) && node.label) {
+      const label = makeLabelSprite(node.label, risky ? "#EE2E2E" : `#${color.toString(16).padStart(6, "0")}`);
+      label.position.set(0, r + 7, 0);
+      mesh.add(label);
+    }
+
     return mesh;
   }, [riskMode]);
 
   const handleEngineStop = useCallback(() => {
     const fg = fgRef.current;
     if (!fg) return;
-    fg.zoomToFit(600, 60);
+    fg.zoomToFit(600, 24);
     const controls = fg.controls();
     if (controls) {
       controls.maxDistance = 600;
       controls.minDistance = 25;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.35;
     }
   }, []);
 
+  /* Click: inspecciona el nodo y vuelve a apuntar la cámara hacia él, manteniendo
+     la distancia/escala actual para no "tele-transportarse" encima del nodo. */
   const handleNodeClick = useCallback((nodeObj: object) => {
     const node = nodeObj as FGNode;
     onNodeClick?.(node);
-    if (fgRef.current && node.x !== undefined && node.y !== undefined) {
-      const dist = 90;
-      fgRef.current.cameraPosition(
-        { x: node.x + dist * 0.4, y: node.y + dist * 0.2, z: (node.z ?? 0) + dist },
-        { x: node.x, y: node.y, z: node.z ?? 0 },
-        700,
+    const fg = fgRef.current;
+    if (fg && node.x !== undefined && node.y !== undefined) {
+      const target = { x: node.x, y: node.y, z: node.z ?? 0 };
+      const camPos = fg.camera().position;
+      const controls = fg.controls();
+      const lookAt = controls?.target ?? new THREE.Vector3(0, 0, 0);
+      const dist = Math.max(camPos.distanceTo(lookAt), 90);
+      const dir = new THREE.Vector3(camPos.x - lookAt.x, camPos.y - lookAt.y, camPos.z - lookAt.z).normalize();
+      fg.cameraPosition(
+        { x: target.x + dir.x * dist, y: target.y + dir.y * dist, z: target.z + dir.z * dist },
+        target,
+        500,
       );
     }
   }, [onNodeClick]);
@@ -173,6 +228,7 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
      interpreta "grafo nuevo" y reinicia la simulación con cada click/setState
      del padre — los nodos saltan y la interacción parece muerta. */
   const data = useMemo(() => {
+    // eslint-disable-next-line react-hooks/refs -- nodeThreeObject repopulates this on each graph rebuild
     pulseMeshes.current = [];
     const riskTraders = new Set(
       graph.nodes.filter((n) => isRiskyNode(n)).map((n) => n.id),
@@ -205,9 +261,12 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
         }}
         nodeThreeObject={nodeThreeObject}
         nodeThreeObjectExtend={false}
-        linkColor={(link) => (link as FGLink).risk ? "#EE2E2E" : "rgba(237,234,226,0.22)"}
-        linkWidth={(link) => (link as FGLink).risk ? 1.4 : 0.5}
+        linkColor={(link) => (link as FGLink).risk ? "#EE2E2E" : "rgba(237,234,226,0.32)"}
+        linkWidth={(link) => (link as FGLink).risk ? 1.6 : 0.6}
         linkOpacity={0.9}
+        linkDirectionalArrowLength={(link) => (link as FGLink).risk ? 5 : 3}
+        linkDirectionalArrowRelPos={1}
+        linkDirectionalArrowColor={(link) => (link as FGLink).risk ? "#EE2E2E" : "rgba(237,234,226,0.5)"}
         linkDirectionalParticles={(link) => (link as FGLink).risk ? 2 : 0}
         linkDirectionalParticleWidth={1.6}
         linkDirectionalParticleSpeed={0.006}
