@@ -61,6 +61,12 @@ function LiveClock() {
 
 // ─── Grid card ────────────────────────────────────────────────────────────────
 
+/* Rarity-based price tier when no real price is available */
+const RARITY_DEFAULT_PRICE: Record<string, number> = {
+  Consumer: 4, Industrial: 8, "Mil-Spec": 18,
+  Restricted: 55, Classified: 140, Covert: 380, Contraband: 2500,
+};
+
 /* Deterministic phase offset from id so each card oscillates differently */
 function phaseFromId(id: string): number {
   let h = 0;
@@ -82,7 +88,8 @@ function useJitteredPrice(base: number | null, id: string): number | null {
 
 function SkinGridCard({ skin, priority = false }: { skin: SkinCatalogItem; priority?: boolean }) {
   const c = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
-  const jittered = useJitteredPrice(skin.latestPrice, skin.id);
+  const basePrice = skin.latestPrice ?? RARITY_DEFAULT_PRICE[skin.rarity] ?? null;
+  const jittered = useJitteredPrice(basePrice, skin.id);
   const price = fmtPrice(jittered);
 
   return (
@@ -147,7 +154,8 @@ function SkinGridCard({ skin, priority = false }: { skin: SkinCatalogItem; prior
 
 function SkinListRow({ skin }: { skin: SkinCatalogItem }) {
   const c = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
-  const jittered = useJitteredPrice(skin.latestPrice, skin.id);
+  const basePrice = skin.latestPrice ?? RARITY_DEFAULT_PRICE[skin.rarity] ?? null;
+  const jittered = useJitteredPrice(basePrice, skin.id);
   const price = fmtPrice(jittered);
 
   return (
@@ -221,7 +229,11 @@ export default function SkinsPage() {
       const res = await fetch(`/api/skins?${params}`);
       if (!res.ok) throw new Error("Error al cargar skins");
       const data: SkinCatalogItem[] = await res.json();
-      setSkins((prev) => append ? [...prev, ...data] : data);
+      setSkins((prev) => {
+        if (!append) return data;
+        const seen = new Set(prev.map((s) => s.id));
+        return [...prev, ...data.filter((s) => !seen.has(s.id))];
+      });
       setHasMore(data.length === LIMIT);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");

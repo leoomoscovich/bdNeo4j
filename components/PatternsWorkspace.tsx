@@ -226,8 +226,8 @@ export function PatternsWorkspace({ onOpenGraph }: PatternsWorkspaceProps) {
                 </tr>
               </thead>
               <tbody>
-                {data.floatPremium.map((row) => (
-                  <tr key={row.instanceId} className="opp-row">
+                {data.floatPremium.map((row, idx) => (
+                  <tr key={`${row.instanceId}-${idx}`} className="opp-row">
                     <td className="opp-skin-name">{row.skinName}</td>
                     <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--d-muted)" }}>
                       {row.floatValue.toFixed(4)}

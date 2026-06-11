@@ -54,29 +54,28 @@ export function SkinInspect3D({ imageUrl, alt }: Props) {
     const mesh = new THREE.Mesh(geo, mat);
     scene.add(mesh);
 
-    /* ── Load texture ── */
+    /* ── Load texture via native Image for reliable cross-origin behavior ── */
     let fadeInterval: ReturnType<typeof setInterval> | null = null;
-    const loader = new THREE.TextureLoader();
-    loader.crossOrigin = "anonymous";
-    loader.load(
-      imageUrl,
-      (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        mat.map = texture;
-        mat.needsUpdate = true;
-        let opacity = 0;
-        fadeInterval = setInterval(() => {
-          opacity = Math.min(1, opacity + 0.06);
-          mat.opacity = opacity;
-          if (opacity >= 1) {
-            clearInterval(fadeInterval!);
-            fadeInterval = null;
-          }
-        }, 16);
-      },
-      undefined,
-      () => { /* silent fail — plate shows empty state */ },
-    );
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const texture = new THREE.Texture(img);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      mat.map = texture;
+      mat.needsUpdate = true;
+      let opacity = 0;
+      fadeInterval = setInterval(() => {
+        opacity = Math.min(1, opacity + 0.06);
+        mat.opacity = opacity;
+        if (opacity >= 1) {
+          clearInterval(fadeInterval!);
+          fadeInterval = null;
+        }
+      }, 16);
+    };
+    img.onerror = () => { /* silent fail — plate shows empty background */ };
+    img.src = imageUrl;
 
     /* ── Mouse interaction ── */
     let targetRotX = 0, targetRotY = 0;
