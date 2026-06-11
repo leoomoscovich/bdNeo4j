@@ -14,29 +14,31 @@ const QUESTIONS: QuestionSpot[] = [
   {
     text: '¿Cansado de tener miedo de perder tus skins?',
     range: [0.04, 0.1, 0.21, 0.27],
-    style: { top: '12%', left: '6%', width: 'min(34vw, 320px)' },
+    style: { top: '14%', left: '6%', width: 'min(28vw, 300px)', textAlign: 'left' },
   },
   {
     text: '¿Querés evitar estafas?',
     range: [0.24, 0.3, 0.41, 0.47],
-    style: { top: '10%', right: '6%', width: 'min(26vw, 260px)' },
+    style: { top: '12%', right: '6%', width: 'min(22vw, 240px)', textAlign: 'right' },
   },
   {
     text: '¿Sabés quién tuvo tu skin antes que vos?',
     range: [0.44, 0.5, 0.61, 0.67],
-    style: { bottom: '14%', left: '5%', width: 'min(32vw, 300px)' },
+    style: { bottom: '16%', left: '6%', width: 'min(26vw, 280px)', textAlign: 'left' },
   },
   {
     text: '¿Confiarías en un trader sin historial?',
     range: [0.64, 0.7, 0.81, 0.87],
-    style: { bottom: '12%', right: '6%', width: 'min(30vw, 290px)' },
+    style: { bottom: '14%', right: '6%', width: 'min(26vw, 280px)', textAlign: 'right' },
   },
 ];
 
-function QuestionCircle({ progress, spot }: { progress: ReturnType<typeof useScroll>['scrollYProgress']; spot: QuestionSpot }) {
+function QuestionText({ progress, spot }: { progress: ReturnType<typeof useScroll>['scrollYProgress']; spot: QuestionSpot }) {
   const [start, peakIn, peakOut, end] = spot.range;
   const opacity = useTransform(progress, [start, peakIn, peakOut, end], [0, 1, 1, 0]);
-  const scale = useTransform(progress, [start, peakIn, peakOut, end], [0.82, 1, 1, 0.9]);
+  const y = useTransform(progress, [start, peakIn, peakOut, end], [18, 0, 0, -14]);
+  const blur = useTransform(progress, [start, peakIn, peakOut, end], [6, 0, 0, 4]);
+  const filter = useTransform(blur, (b) => `blur(${b}px)`);
 
   return (
     <motion.div
@@ -44,21 +46,16 @@ function QuestionCircle({ progress, spot }: { progress: ReturnType<typeof useScr
         position: 'absolute',
         ...spot.style,
         opacity,
-        scale,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        aspectRatio: '1 / 1',
-        borderRadius: '50%',
-        border: '1px solid rgba(255,255,255,0.32)',
-        background: 'rgba(10,10,12,0.35)',
-        backdropFilter: 'blur(2px)',
-        padding: '10%',
+        y,
+        filter,
         fontFamily: 'var(--font-serif, serif)',
-        fontSize: 'clamp(0.85rem, 1.6vw, 1.3rem)',
-        lineHeight: 1.25,
-        color: 'rgba(255,255,255,0.92)',
+        fontStyle: 'italic',
+        fontWeight: 400,
+        fontSize: 'clamp(1.1rem, 2.4vw, 1.9rem)',
+        lineHeight: 1.35,
+        letterSpacing: '0.01em',
+        color: 'rgba(255,255,255,0.95)',
+        textShadow: '0 0 24px rgba(255,255,255,0.25), 0 1px 12px rgba(0,0,0,0.5)',
         pointerEvents: 'none',
       }}
     >
@@ -202,7 +199,7 @@ export default function HeroSequence() {
 
         {/* Trust questions, appearing one by one in the corners as the scene assembles */}
         {QUESTIONS.map((spot) => (
-          <QuestionCircle key={spot.text} progress={heroProgress} spot={spot} />
+          <QuestionText key={spot.text} progress={heroProgress} spot={spot} />
         ))}
 
         {/* Closing line, revealed once all parts have come together */}
