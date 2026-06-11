@@ -153,29 +153,16 @@ export default function DashboardPage() {
   const workspace = (
     <>
       {activeWorkspace === "dashboard" && (
-        <section className="workspace">
-          <div className="table-panel">
+        <section className="workspace" style={{ flexDirection: "column", gap: 16 }}>
+          <MarketPulseCards />
+          <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Resumen</h2>
-                <p>Pulso del mercado en tiempo real para los marketplaces activos.</p>
+                <h2>Estado del scan</h2>
+                <p>{scan ? `${scan.opportunitiesFound} oportunidades · ${scan.riskCyclesFound} ciclos de riesgo detectados.` : "Sin scans ejecutados aún. Usá el botón de la barra superior."}</p>
               </div>
             </div>
-            <div style={{ padding: 18 }}>
-              <MarketPulseCards />
-            </div>
-          </div>
-          <div className="right-stack">
-            <section className="panel">
-              <div className="panel-header">
-                <div>
-                  <h2>Estado del scan</h2>
-                  <p>{scan ? `${scan.opportunitiesFound} oportunidades, ${scan.riskCyclesFound} ciclos de riesgo.` : "Sin scans ejecutados aún."}</p>
-                </div>
-              </div>
-            </section>
-            <GraphInsightPanel graphTarget={graphTarget} />
-          </div>
+          </section>
         </section>
       )}
 
