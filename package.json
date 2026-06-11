@@ -23,10 +23,10 @@
     "react": "latest",
     "react-dom": "latest",
     "react-force-graph-3d": "^1.29.1",
-    "tailwind-merge": "^3.6.0",
-    "tailwindcss": "latest"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
@@ -34,6 +34,7 @@
     "eslint": "latest",
     "eslint-config-next": "latest",
     "playwright": "^1.60.0",
+    "tailwindcss": "^4.3.0",
     "tsx": "latest",
     "typescript": "latest"
   }
