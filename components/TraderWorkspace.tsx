@@ -32,9 +32,10 @@ type DrawerProps = {
 };
 
 function TraderDrawer({ traderId, handle, onClose, onOpenGraph }: DrawerProps) {
-  const [profile, setProfile] = useState<TraderProfile | null>(null);
-  const [graph,   setGraph]   = useState<GraphResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile,  setProfile]  = useState<TraderProfile | null>(null);
+  const [graph,    setGraph]    = useState<GraphResponse | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [viewMode, setViewMode] = useState<"inventory" | "network">("inventory");
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,13 +151,57 @@ function TraderDrawer({ traderId, handle, onClose, onOpenGraph }: DrawerProps) {
               )}
             </div>
 
-            {/* Mini graph */}
+            {/* Mini graph with Inventory / Network toggle */}
             {graph && (
               <div style={{ padding: "14px 20px 0", borderBottom: "1px solid var(--d-hair)" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--d-muted)", marginBottom: 10 }}>
-                  Red de conexiones · {graph.nodes.length} nodos
+                {/* Toggle header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--d-muted)" }}>
+                    {viewMode === "inventory"
+                      ? `Inventario · ${graph.nodes.filter((n) => n.type !== "Trader" || n.id === traderId).length} nodos`
+                      : `Red de conexiones · ${graph.nodes.length} nodos`}
+                  </div>
+                  <div style={{ display: "flex", background: "var(--d-panel-2)", borderRadius: 6, padding: 2, gap: 2 }}>
+                    {(["inventory", "network"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setViewMode(mode)}
+                        style={{
+                          padding: "3px 10px",
+                          borderRadius: 4,
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          background: viewMode === mode ? "var(--d-orange, #ff9f1c)" : "transparent",
+                          color: viewMode === mode ? "#000" : "var(--d-muted)",
+                          fontWeight: viewMode === mode ? 600 : 400,
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {mode === "inventory" ? "Inventario" : "Red"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <Graph3D graph={graph} height={280} />
+                <Graph3D
+                  graph={
+                    viewMode === "inventory"
+                      ? {
+                          ...graph,
+                          nodes: graph.nodes.filter((n) => n.type !== "Trader" || n.id === traderId),
+                          edges: graph.edges.filter((e) =>
+                            graph.nodes
+                              .filter((n) => n.type !== "Trader" || n.id === traderId)
+                              .some((n) => n.id === e.source || n.id === e.target)
+                          ),
+                        }
+                      : graph
+                  }
+                  height={280}
+                />
               </div>
             )}
 

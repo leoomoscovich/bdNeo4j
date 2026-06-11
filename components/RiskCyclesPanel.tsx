@@ -83,8 +83,29 @@ export function RiskCyclesPanel({ selectedId, filters, onSelect }: RiskCyclesPan
     );
   }
 
+  const hasCritical = cycles.some((c) => c.severity === "CRITICAL" || c.severity === "HIGH");
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Alert banner */}
+      <div
+        className={`rounded-xl border p-3 text-[12px] ${
+          hasCritical
+            ? "border-red-500/30 bg-red-500/10 text-red-400"
+            : "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
+        }`}
+      >
+        <div className="flex items-center gap-2 font-bold">
+          <span>{hasCritical ? "⚠" : "ℹ"}</span>
+          <span>Alerta algoritmo · Neo4j — {cycles.length} {cycles.length === 1 ? "ciclo detectado" : "ciclos detectados"}</span>
+        </div>
+        <p className="mt-1 text-[11px] text-[var(--muted)]">
+          Patrón circular de transacciones detectado entre cuentas vinculadas en el grafo.
+          Los nodos marcados representan traders con flujos de valor sospechosos que no corresponden a operaciones de mercado normales.
+          La detección es real; el historial de transacciones que la alimenta es simulado.
+        </p>
+      </div>
+
       {cycles.map((cycle) => {
         const isSelected = selectedId === cycle.id;
         const sev = severityConfig[cycle.severity];
