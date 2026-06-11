@@ -272,6 +272,11 @@
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--d-muted-2);
 }
 .pulse-icon { color: var(--d-muted-2); display: inline-flex; }
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
 @keyframes value-flash {
   0%   { color: #EE2E2E; text-shadow: 0 0 8px rgba(238,46,46,0.5); }
   60%  { color: var(--d-ink); text-shadow: none; }
