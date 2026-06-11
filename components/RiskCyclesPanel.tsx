@@ -10,6 +10,7 @@ import { serializeMarketplaces } from "@/lib/ui-state";
 type RiskCyclesPanelProps = {
   selectedId?: string;
   filters: AppFilters;
+  refreshTick?: number;
   onSelect: (cycle: RiskCycle) => void;
 };
 
@@ -31,7 +32,7 @@ function formatUsd(value: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 }
 
-export function RiskCyclesPanel({ selectedId, filters, onSelect }: RiskCyclesPanelProps) {
+export function RiskCyclesPanel({ selectedId, filters, refreshTick = 0, onSelect }: RiskCyclesPanelProps) {
   const [cycles, setCycles] = useState<RiskCycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,7 +58,7 @@ export function RiskCyclesPanel({ selectedId, filters, onSelect }: RiskCyclesPan
         setError("No se pudieron obtener los ciclos de riesgo.");
         setLoading(false);
       });
-  }, [filters]);
+  }, [filters, refreshTick]);
 
   if (loading) {
     return (

@@ -154,8 +154,11 @@ export async function getHomeData(): Promise<HomeData> {
         }
       : null;
 
-    // trader con más volumen → protagonista del grafo de la sección Relaciones
-    const featuredTrader = traders[0] ?? null;
+    // Rotate through top-10 traders so the graph changes across requests/revalidations
+    const topPool = traders.slice(0, 10);
+    const featuredTrader = topPool.length > 0
+      ? topPool[Math.floor(Math.random() * topPool.length)]
+      : null;
     let networkGraph: GraphResponse | null = null;
     if (featuredTrader) {
       const graphRes = await runQuery(graphAroundTraderQuery, { traderId: featuredTrader.id });

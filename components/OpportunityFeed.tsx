@@ -41,6 +41,7 @@ function confidenceBar(score: number): string {
 type OpportunityFeedProps = {
   selectedId?: string;
   filters: AppFilters;
+  refreshTick?: number;
   onSelect: (opp: Opportunity) => void;
   onOpenGraph: (opp: Opportunity) => void;
   onCompare: (opp: Opportunity) => void;
@@ -50,6 +51,7 @@ type OpportunityFeedProps = {
 export function OpportunityFeed({
   selectedId,
   filters,
+  refreshTick = 0,
   onSelect,
   onOpenGraph,
   onCompare,
@@ -83,7 +85,7 @@ export function OpportunityFeed({
         setOpportunities([]);
       })
       .finally(() => setLoading(false));
-  }, [filters]);
+  }, [filters, refreshTick]);
 
   const panelHeader = (
     <div className="panel-header">

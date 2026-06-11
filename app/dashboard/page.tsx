@@ -29,6 +29,13 @@ export default function DashboardPage() {
   const [compareIdsState, setCompareIdsState] = useState<string[]>([]);
   const [scan, setScan] = useState<ScanSummary | null>(null);
   const [scanStatus, setScanStatus] = useState<"idle" | "running" | "error">("idle");
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  /* Silent background polling — OpportunityFeed and RiskCyclesPanel re-fetch on each tick */
+  useEffect(() => {
+    const interval = setInterval(() => setRefreshTick((t) => t + 1), 10_000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     setCompareIdsState(getCompareIds());
@@ -177,6 +184,7 @@ export default function DashboardPage() {
             <OpportunityFeed
               selectedId={selectedOpportunity?.id}
               filters={filters}
+              refreshTick={refreshTick}
               onSelect={handleSelectOpportunity}
               onOpenGraph={handleOpenOpportunityGraph}
               onCompare={handleCompareOpportunity}
@@ -194,6 +202,7 @@ export default function DashboardPage() {
                 <RiskCyclesPanel
                   selectedId={selectedRiskCycle?.id}
                   filters={filters}
+                  refreshTick={refreshTick}
                   onSelect={handleSelectRiskCycle}
                 />
               </div>
