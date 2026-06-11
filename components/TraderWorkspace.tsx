@@ -187,6 +187,7 @@ function TraderDrawer({ traderId, handle, onClose, onOpenGraph }: DrawerProps) {
                   </div>
                 </div>
                 <Graph3D
+                  chargeStrength={viewMode === "inventory" ? -280 : -120}
                   graph={
                     viewMode === "inventory"
                       ? {

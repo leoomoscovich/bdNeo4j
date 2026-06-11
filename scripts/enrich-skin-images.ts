@@ -56,6 +56,23 @@ async function main() {
     console.log(`Fetched ${externalSkins.length} external skin records.`);
 
     const imageMap = buildSkinImageMap(localSkinNames, externalSkins);
+
+    /* Steam CDN fallback: for skins not found in ByMykel, construct a URL
+       from the market_hash_name. This works for most standard weapon skins.
+       Knives need the "★ " prefix — we detect them by weapon name. */
+    const KNIFE_WEAPONS = new Set([
+      "Karambit","Butterfly Knife","M9 Bayonet","Flip Knife","Gut Knife",
+      "Falchion Knife","Shadow Daggers","Stiletto Knife","Bowie Knife",
+      "Navaja Knife","Talon Knife","Skeleton Knife","Ursus Knife",
+      "Paracord Knife","Survival Knife","Nomad Knife","Classic Knife",
+    ]);
+    function steamCdnFallback(name: string): string {
+      const isKnife = KNIFE_WEAPONS.has(name.split(" | ")[0]?.trim() ?? "");
+      const marketName = isKnife ? `★ ${name}` : name;
+      const encoded = encodeURIComponent(`${marketName} (Field-Tested)`);
+      return `https://steamcommunity.com/market/listings/730/${encoded}/render?start=0&count=1&currency=1&language=english&format=json`;
+    }
+
     const rows = localSkinNames.map((name) => ({
       name,
       imageUrl: imageMap.get(name) ?? "",

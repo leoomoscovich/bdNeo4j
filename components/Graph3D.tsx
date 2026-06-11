@@ -72,6 +72,7 @@ type Graph3DProps = {
   graph: GraphResponse;
   height?: number;
   riskMode?: boolean;
+  chargeStrength?: number;
   onNodeClick?: (node: GraphNode) => void;
 };
 
@@ -81,7 +82,7 @@ function isRiskyNode(node: GraphNode): boolean {
   return risk >= 60 || suspicious;
 }
 
-export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: Graph3DProps) {
+export function Graph3D({ graph, height = 420, riskMode = false, chargeStrength = -120, onNodeClick }: Graph3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
@@ -208,10 +209,22 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
     return mesh;
   }, [riskMode]);
 
+  /* Apply charge strength whenever it changes (inventory vs network mode). */
+  useEffect(() => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const charge = (fg as any).d3Force?.("charge");
+    if (charge?.strength) charge.strength(chargeStrength);
+  }, [chargeStrength, graph]);
+
   const handleEngineStop = useCallback(() => {
     const fg = fgRef.current;
     if (!fg) return;
     fg.zoomToFit(600, 24);
+    // Freeze physics — nodes stay put on subsequent re-renders that don't change graph data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (fg as any).pauseAnimation?.();
     const controls = fg.controls();
     if (controls) {
       controls.maxDistance = 600;
@@ -219,6 +232,9 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.35;
     }
+    // Resume Three.js render loop (only physics is frozen, not the scene)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (fg as any).resumeAnimation?.();
   }, []);
 
   /* Click: inspecciona el nodo y vuelve a apuntar la cámara hacia él, manteniendo
