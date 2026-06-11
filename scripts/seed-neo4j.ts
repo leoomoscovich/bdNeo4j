@@ -41,8 +41,17 @@ async function fetchSkinImages(): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   try {
     console.log("  Fetching skin images from ByMykel CSGO-API...");
-    const res = await fetch("https://bymykel.github.io/CSGO-API/api/en/skins.json");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // Try multiple known endpoints for the ByMykel CSGO-API
+    const candidates = [
+      "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json",
+      "https://bymykel.github.io/CSGO-API/api/en/skins.json",
+    ];
+    let res: Response | null = null;
+    for (const url of candidates) {
+      const r = await fetch(url);
+      if (r.ok) { res = r; break; }
+    }
+    if (!res) throw new Error("all endpoints 404");
     const skins = await res.json() as Array<{ name: string; image: string }>;
     for (const s of skins) {
       if (s.name && s.image) map.set(s.name, s.image);
