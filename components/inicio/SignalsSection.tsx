@@ -233,8 +233,23 @@ export default function SignalsSection({ crossVenue = [], avgSpreadPct = null, d
   const wrapperRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLOListElement>(null);
   const [activeIdx, setActiveIdx] = useState(-1);
   const [visitedSet, setVisitedSet] = useState<Set<number>>(new Set());
+  const [carouselIdx, setCarouselIdx] = useState(0);
+
+  /* Track carousel scroll position on mobile */
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    function onCarouselScroll() {
+      if (!grid) return;
+      const cardW = grid.scrollWidth / 6;
+      setCarouselIdx(Math.round(grid.scrollLeft / cardW));
+    }
+    grid.addEventListener('scroll', onCarouselScroll, { passive: true });
+    return () => grid.removeEventListener('scroll', onCarouselScroll);
+  }, []);
 
   const inView = useInView(sectionRef, { once: true, margin: '0px 0px -10% 0px' });
   const tableInView = useInView(tableRef, { once: true, margin: '0px 0px -5% 0px' });
@@ -322,8 +337,8 @@ export default function SignalsSection({ crossVenue = [], avgSpreadPct = null, d
             </div>
           </motion.header>
 
-          {/* 2×3 / 3×2 signal grid */}
-          <ol className="signals-grid">
+          {/* 2×3 / 3×2 signal grid — horizontal carousel on mobile */}
+          <ol className="signals-grid" ref={gridRef}>
             {SIGNALS_LIVE.map((s, i) => {
               const active = activeIdx === i;
               const visited = visitedSet.has(i) && !active;
@@ -388,6 +403,22 @@ export default function SignalsSection({ crossVenue = [], avgSpreadPct = null, d
               );
             })}
           </ol>
+
+          {/* Mobile carousel dots */}
+          <div className="signals-carousel-dots" aria-hidden="true">
+            {SIGNALS_LIVE.map((s, i) => (
+              <button
+                key={s.id}
+                className={`signals-carousel-dots__dot${carouselIdx === i ? ' signals-carousel-dots__dot--active' : ''}`}
+                onClick={() => {
+                  const grid = gridRef.current;
+                  if (!grid) return;
+                  const cardW = grid.scrollWidth / 6;
+                  grid.scrollTo({ left: cardW * i, behavior: 'smooth' });
+                }}
+              />
+            ))}
+          </div>
 
           {/* Progress indicator — visible only in sticky desktop mode */}
           <div className="signals-progress">

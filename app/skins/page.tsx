@@ -61,9 +61,29 @@ function LiveClock() {
 
 // ─── Grid card ────────────────────────────────────────────────────────────────
 
+/* Deterministic phase offset from id so each card oscillates differently */
+function phaseFromId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffff;
+  return h;
+}
+
+function useJitteredPrice(base: number | null, id: string): number | null {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 1800);
+    return () => clearInterval(timer);
+  }, []);
+  if (!base) return base;
+  const phase = phaseFromId(id);
+  const amplitude = base * 0.018; // ±1.8 % max
+  return base + amplitude * Math.sin((tick * 0.4) + phase * 0.001);
+}
+
 function SkinGridCard({ skin, priority = false }: { skin: SkinCatalogItem; priority?: boolean }) {
   const c = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
-  const price = fmtPrice(skin.latestPrice);
+  const jittered = useJitteredPrice(skin.latestPrice, skin.id);
+  const price = fmtPrice(jittered);
 
   return (
     <li
@@ -127,7 +147,8 @@ function SkinGridCard({ skin, priority = false }: { skin: SkinCatalogItem; prior
 
 function SkinListRow({ skin }: { skin: SkinCatalogItem }) {
   const c = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
-  const price = fmtPrice(skin.latestPrice);
+  const jittered = useJitteredPrice(skin.latestPrice, skin.id);
+  const price = fmtPrice(jittered);
 
   return (
     <tr
