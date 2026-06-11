@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Graph3D } from "@/components/Graph3D";
-import { SkinInspect3D } from "@/components/SkinInspect3D";
 import type { GraphResponse, SkinDetailResponse, JourneyStep, TraderReputation, InstanceSummary } from "@/lib/types";
 
 const RARITY_VAR: Record<string, string> = {
@@ -15,6 +14,17 @@ const RARITY_VAR: Record<string, string> = {
   Classified:  "var(--r-classified)",
   Covert:      "var(--r-covert)",
   Contraband:  "var(--r-contraband)",
+};
+
+/* Raw hex accent per rarity — used as CSS variable for gradients and borders */
+const RARITY_ACCENT: Record<string, string> = {
+  Consumer:    "#b0c3d9",
+  Industrial:  "#5e98d9",
+  "Mil-Spec":  "#4b69ff",
+  Restricted:  "#8847ff",
+  Classified:  "#d32ce6",
+  Covert:      "#eb4b4b",
+  Contraband:  "#e4ae39",
 };
 
 // ─── reputation badge ──────────────────────────────────────────────────────────
@@ -226,7 +236,16 @@ export default function SkinDetailPage() {
       <FichaNav />
 
       {/* ── Header ── */}
-      <header className="ficha-head">
+      <header
+        className="ficha-head"
+        style={{ "--rarity-accent": RARITY_ACCENT[skin.rarity] ?? "#eb4b4b" } as React.CSSProperties}
+      >
+        {skin.imageUrl && (
+          <div className="ficha-head__bg" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={skin.imageUrl} alt="" className="ficha-head__weapon" />
+          </div>
+        )}
         <div className="ficha-head__inner">
           <div className="ficha-head__rail">
             <b>02 / Ficha</b>
@@ -246,6 +265,21 @@ export default function SkinDetailPage() {
               {skin.weapon} | <em>{skinNameOnly}</em>
             </h1>
             {skin.collection && <p className="ficha-head__collection">{skin.collection}</p>}
+            {currentInstance && (
+              <div style={{ display: "flex", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
+                {[
+                  { k: "Desgaste", v: currentInstance.wear },
+                  { k: "Float", v: currentInstance.floatValue.toFixed(4) },
+                  { k: "Instancias", v: String(skin.instances.length) },
+                  { k: "Transacciones", v: String(journey.length) },
+                ].map(({ k, v }) => (
+                  <div key={k} style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: ".08em" }}>
+                    <span style={{ color: "var(--muted)", textTransform: "uppercase", marginRight: 6 }}>{k}</span>
+                    <span style={{ color: "var(--ink)" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           {latestTx && (
             <div className="ficha-head__stat">
@@ -261,46 +295,6 @@ export default function SkinDetailPage() {
 
       {/* ── Cuerpo ── */}
       <main className="ficha-body">
-        {/* Columna izquierda: plate */}
-        <figure className="ficha-plate" style={{ margin: 0 }}>
-          <div className="ficha-plate__head">
-            <span>Ficha · {(currentInstance?.id ?? skin.id).slice(-12).toUpperCase()}</span>
-            <span className="ficha-plate__live"><span className="dot--live" />Observada</span>
-          </div>
-          <div className={`ficha-plate__art${skin.imageUrl ? "" : " ficha-plate__art--empty"}`}>
-            {skin.imageUrl ? (
-              <>
-                <SkinInspect3D imageUrl={skin.imageUrl} alt={skin.name} />
-                <span className="ficha-plate__crop ficha-plate__crop--tl" />
-                <span className="ficha-plate__crop ficha-plate__crop--tr" />
-                <span className="ficha-plate__crop ficha-plate__crop--bl" />
-                <span className="ficha-plate__crop ficha-plate__crop--br" />
-              </>
-            ) : (
-              <span>Sin imagen</span>
-            )}
-          </div>
-          <dl className="ficha-plate__data">
-            <div>
-              <dt>Desgaste</dt>
-              <dd>{currentInstance?.wear ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Float</dt>
-              <dd>{currentInstance ? currentInstance.floatValue.toFixed(4) : "—"}</dd>
-            </div>
-            <div>
-              <dt>Instancias</dt>
-              <dd>{skin.instances.length}</dd>
-            </div>
-            <div>
-              <dt>Transacciones</dt>
-              <dd>{journey.length}</dd>
-            </div>
-          </dl>
-        </figure>
-
-        {/* Columna derecha: secciones */}
         <div>
           {/* Instancias */}
           {skin.instances.length > 1 && (
@@ -383,12 +377,59 @@ export default function SkinDetailPage() {
             </div>
           </section>
 
+          {/* Listings en vivo (CsFloat) */}
+          {skin.venuePrices.length > 0 && (
+            <section className="ficha-section">
+              <div className="ficha-section__head">
+                <div>
+                  <span className="ficha-section__num">A/04 · Mercado</span>
+                  <h2 className="ficha-section__title">Precios en vivo</h2>
+                </div>
+                <span className="ficha-section__meta">
+                  {skin.venuePrices.some((v) => v.marketplace === "CSFloat (live)") ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className="dot--live" />CSFloat
+                    </span>
+                  ) : "Locales"}
+                </span>
+              </div>
+              <div className="ficha-table-wrap">
+                <table className="ficha-table">
+                  <thead>
+                    <tr>
+                      <th>Marketplace</th>
+                      <th>Desgaste</th>
+                      <th className="num">Precio USD</th>
+                      <th className="num">Cant.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {skin.venuePrices.map((v, i) => (
+                      <tr key={i}>
+                        <td>
+                          {v.marketplace === "CSFloat (live)" ? (
+                            <span style={{ color: "var(--green, #4caf50)", fontWeight: 600 }}>
+                              {v.marketplace}
+                            </span>
+                          ) : v.marketplace}
+                        </td>
+                        <td className="muted">{v.wear || "—"}</td>
+                        <td className="num"><b>${v.priceUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></td>
+                        <td className="num muted">{v.quantity ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
           {/* Historial */}
           {journey.length > 0 && (
             <section className="ficha-section">
               <div className="ficha-section__head">
                 <div>
-                  <span className="ficha-section__num">A/04 · Historial</span>
+                  <span className="ficha-section__num">A/05 · Historial</span>
                   <h2 className="ficha-section__title">Historial de precios</h2>
                 </div>
               </div>

@@ -244,6 +244,7 @@ MATCH (s:Skin)-[:FOR_WEAPON]->(w:Weapon)
 WHERE ($query = '' OR toLower(s.name) CONTAINS toLower($query))
   AND ($rarity = '' OR s.rarity = $rarity)
   AND ($weapon = '' OR w.name = $weapon)
+  AND ($skinType = '' OR s.skinType = $skinType)
 OPTIONAL MATCH (s)-[:BELONGS_TO]->(c:Collection)
 OPTIONAL MATCH (s)<-[:FOR_SKIN]-(p:PriceSnapshot)-[:ON_MARKETPLACE]->(mp:Marketplace)
 WITH s, w, c, collect(DISTINCT {price: p.priceUsd, marketplace: mp.name}) AS rawPrices
@@ -255,13 +256,41 @@ WITH s, w, c, instanceCount, prices,
      reduce(mn = null, x IN prices |
        CASE WHEN mn IS NULL OR x.price < mn.price THEN x ELSE mn END) AS cheapest
 RETURN s.id AS id, s.name AS name, w.name AS weapon, c.name AS collection,
-  s.rarity AS rarity, s.imageUrl AS imageUrl,
+  s.rarity AS rarity, s.imageUrl AS imageUrl, s.skinType AS skinType,
   instanceCount,
   cheapest.price AS latestPrice,
   cheapest.marketplace AS latestMarketplace
-ORDER BY coalesce(s.liquidityUsd, 0) DESC
+ORDER BY s.name ASC
 SKIP $skip
 LIMIT $limit
+`;
+
+export const allStickersQuery = `
+MATCH (st:Sticker)
+WHERE ($query = '' OR toLower(st.name) CONTAINS toLower($query))
+RETURN st.id AS id, st.name AS name,
+  'Sticker' AS weapon, st.tournament AS collection,
+  st.rarity AS rarity, coalesce(st.imageUrl, '') AS imageUrl, 'Sticker' AS skinType,
+  0 AS instanceCount, st.valueUsd AS latestPrice, 'Market' AS latestMarketplace
+ORDER BY st.name ASC
+SKIP $skip LIMIT $limit
+`;
+
+export const catalogBreakdownQuery = `
+CALL {
+  MATCH (s:Skin) RETURN s.skinType AS category, count(s) AS cnt
+  UNION ALL
+  MATCH (st:Sticker) RETURN 'Sticker' AS category, count(st) AS cnt
+}
+RETURN category, sum(cnt) AS count
+ORDER BY count DESC
+`;
+
+export const stickerDetailQuery = `
+MATCH (st:Sticker {id: $skinId})
+RETURN st.id AS id, st.name AS name, st.tournament AS tournament,
+       st.rarity AS rarity, coalesce(st.imageUrl, '') AS imageUrl,
+       coalesce(st.valueUsd, 0) AS valueUsd
 `;
 
 export const skinDetailQuery = `

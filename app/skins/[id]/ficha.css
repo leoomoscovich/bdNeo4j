@@ -9,7 +9,45 @@
   position: relative;
   padding: clamp(36px, 5vw, 72px) var(--pad) clamp(28px, 4vw, 48px);
   border-bottom: 1px solid var(--ink);
+  overflow: hidden;
 }
+
+/* Hero background image */
+.ficha-head__bg {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+}
+/* Native <img> positioned within explicit bounds — no fill tricks, no clipping */
+.ficha-head__weapon {
+  position: absolute;
+  top: 6%; bottom: 4%;
+  left: 42%; right: 2%;
+  width: auto; height: auto;
+  object-fit: contain;
+  object-position: right bottom;
+  opacity: 0.92; filter: saturate(1.05);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+@media (max-width: 900px) {
+  .ficha-head__weapon { left: 30%; opacity: 0.55; }
+}
+.ficha-head__bg::after {
+  content: "";
+  position: absolute; inset: 0;
+  /* Protege solo la zona del texto (izquierda). La derecha (arma) queda despejada. */
+  background:
+    linear-gradient(to right,
+      var(--paper) 30%,
+      rgba(var(--paper-rgb, 250,248,241), 0.88) 42%,
+      rgba(var(--paper-rgb, 250,248,241), 0.10) 54%,
+      transparent 62%
+    ),
+    linear-gradient(to left,
+      color-mix(in srgb, var(--rarity-accent, var(--red)) 14%, transparent) 0%,
+      transparent 38%
+    );
+}
+.ficha-head__inner { position: relative; z-index: 1; }
 .ficha-head__inner {
   max-width: var(--maxw); margin: 0 auto;
   display: grid; grid-template-columns: 120px 1fr auto;
@@ -78,11 +116,9 @@
 .ficha-body {
   max-width: var(--maxw); margin: 0 auto;
   padding: clamp(28px, 4vw, 56px) var(--pad) clamp(48px, 6vw, 96px);
-  display: grid; grid-template-columns: minmax(320px, 480px) 1fr;
-  gap: clamp(28px, 4vw, 56px);
-  align-items: start;
+  display: flex; flex-direction: column;
+  gap: 0;
 }
-@media (max-width: 1000px) { .ficha-body { grid-template-columns: 1fr; } }
 
 /* ── Plate (imagen con crop marks) ──────────────────────── */
 .ficha-plate {

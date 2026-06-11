@@ -27,11 +27,14 @@ const RARITIES = [
   { key: "Contraband", cssVar: "var(--r-contraband)" },
 ];
 
-const WEAPONS = [
-  "AK-47", "AWP", "M4A1-S", "M4A4", "USP-S", "Desert Eagle",
-  "Glock-18", "Karambit", "Butterfly Knife", "M9 Bayonet",
-  "SSG 08", "SG 553", "MAC-10", "MP9", "FAMAS", "AUG", "P90",
-];
+const SKIN_TYPES = [
+  { key: "Weapon",  label: "Armas",     icon: "⌖" },
+  { key: "Knife",   label: "Cuchillos", icon: "★" },
+  { key: "Gloves",  label: "Guantes",   icon: "◈" },
+  { key: "Sticker", label: "Stickers",  icon: "◉" },
+] as const;
+
+type BreakdownItem = { category: string; count: number };
 
 const LIMIT = 42;
 
@@ -193,14 +196,22 @@ export default function SkinsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [weapon, setWeapon] = useState("*");
+  const [skinType, setSkinType] = useState("*");
   const [rarity, setRarity] = useState("*");
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [sort, setSort] = useState("recent");
+  const [sort, setSort] = useState("name");
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [breakdown, setBreakdown] = useState<BreakdownItem[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/skins?mode=breakdown")
+      .then((r) => r.ok ? r.json() : [])
+      .then((d: BreakdownItem[]) => setBreakdown(d))
+      .catch(() => {});
+  }, []);
 
   // total real de skins indexadas en Neo4j
   useEffect(() => {
@@ -214,14 +225,15 @@ export default function SkinsPage() {
   }, []);
 
   const fetchSkins = useCallback(async (
-    q: string, w: string, r: string, p: number, append = false
+    q: string, st: string, r: string, p: number, append = false
   ) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         mode: "catalog",
         q,
-        weapon: w === "*" ? "" : w,
+        weapon: "",
+        skinType: st === "*" ? "" : st,
         rarity: r === "*" ? "" : r,
         page: String(p),
         limit: String(LIMIT),
@@ -244,8 +256,8 @@ export default function SkinsPage() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchSkins(query, weapon, rarity, 0, false);
-  }, [query, weapon, rarity, fetchSkins]);
+    fetchSkins(query, skinType, rarity, 0, false);
+  }, [query, skinType, rarity, fetchSkins]);
 
   // client-side sort on current page
   const sorted = [...skins].sort((a, b) => {
@@ -258,7 +270,7 @@ export default function SkinsPage() {
   function loadMore() {
     const next = page + 1;
     setPage(next);
-    fetchSkins(query, weapon, rarity, next, true);
+    fetchSkins(query, skinType, rarity, next, true);
   }
 
   const shown = sorted.length;
@@ -306,7 +318,7 @@ export default function SkinsPage() {
           <div className="cat-head__stat">
             <span className="k">Piezas observadas</span>
             <span className="v">
-              {shown < totalCount && query || weapon !== "*" || rarity !== "*"
+              {shown < totalCount && query || skinType !== "*" || rarity !== "*"
                 ? <>{shown.toLocaleString("es-AR")}<small>de {totalCount.toLocaleString("es-AR")}</small></>
                 : <>{totalCount.toLocaleString("es-AR")}<small>activas</small></>
               }
@@ -326,11 +338,55 @@ export default function SkinsPage() {
         </div>
       </section>
 
+      {/* ── Breakdown chart ── */}
+      {breakdown.length > 0 && (
+        <section className="catalog-breakdown">
+          <div className="catalog-breakdown__inner">
+            <div className="catalog-breakdown__rail">
+              <b>01 / Distribución</b>
+              <span>Catálogo</span>
+            </div>
+            <div className="catalog-breakdown__bars">
+              {(() => {
+                const total = breakdown.reduce((s, d) => s + d.count, 0);
+                const COLOR: Record<string, string> = {
+                  Weapon: "var(--r-classified)", Knife: "var(--r-covert)",
+                  Gloves: "var(--r-contraband)", Sticker: "var(--r-restricted)",
+                };
+                const LABEL: Record<string, string> = {
+                  Weapon: "Armas", Knife: "Cuchillos", Gloves: "Guantes", Sticker: "Stickers",
+                };
+                return breakdown.map((d) => (
+                  <button
+                    key={d.category}
+                    className={`breakdown-bar${skinType === d.category ? " breakdown-bar--active" : ""}`}
+                    onClick={() => { setPage(0); setSkinType(skinType === d.category ? "*" : d.category); }}
+                    style={{ "--bar-color": COLOR[d.category] ?? "var(--ink)" } as React.CSSProperties}
+                  >
+                    <span className="breakdown-bar__label">{LABEL[d.category] ?? d.category}</span>
+                    <span className="breakdown-bar__track">
+                      <span className="breakdown-bar__fill" style={{ width: `${Math.round((d.count / total) * 100)}%` }} />
+                    </span>
+                    <span className="breakdown-bar__count">{d.count.toLocaleString("es-AR")}</span>
+                    <span className="breakdown-bar__pct">{Math.round((d.count / total) * 100)}%</span>
+                  </button>
+                ));
+              })()}
+            </div>
+            {skinType !== "*" && (
+              <button className="breakdown-clear" onClick={() => { setPage(0); setSkinType("*"); }}>
+                Mostrar todo
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ── Filters ── */}
       <section className="filters">
         <div className="filters__inner">
           <div className="filters__rail">
-            <b>01 / Filtros</b>
+            <b>02 / Filtros</b>
             <span>Acotá el catálogo</span>
           </div>
           <div className="filters__main">
@@ -354,38 +410,28 @@ export default function SkinsPage() {
               </span>
             </div>
 
-            {/* Weapon chips */}
+            {/* Type chips */}
             <div className="filterset">
-              <span className="filterset__label">Arma</span>
+              <span className="filterset__label">Tipo</span>
               <div className="filterset__tags">
                 <button
                   className="tag-chip tag-chip--all"
-                  aria-pressed={weapon === "*"}
-                  onClick={() => {
-                    setPage(0);
-                    setWeapon("*");
-                  }}
+                  aria-pressed={skinType === "*"}
+                  onClick={() => { setPage(0); setSkinType("*"); }}
                 >
-                  Todas
+                  Todos
                 </button>
-                {WEAPONS.map((w) => (
+                {SKIN_TYPES.map(({ key, label, icon }) => (
                   <button
-                    key={w}
+                    key={key}
                     className="tag-chip"
-                    aria-pressed={weapon === w}
-                    onClick={() => {
-                      setPage(0);
-                      setWeapon(weapon === w ? "*" : w);
-                    }}
+                    aria-pressed={skinType === key}
+                    onClick={() => { setPage(0); setSkinType(skinType === key ? "*" : key); }}
                   >
-                    {w.startsWith("Karambit") || w.startsWith("Butterfly") || w.startsWith("M9") ? `★ ${w}` : w}
+                    {icon} {label}
                   </button>
                 ))}
               </div>
-              <button className="filterset__clear" onClick={() => {
-                setPage(0);
-                setWeapon("*");
-              }}>Limpiar</button>
             </div>
 
             {/* Rarity chips */}
@@ -483,7 +529,7 @@ export default function SkinsPage() {
 
           {/* Left rail with legend */}
           <aside className="catalog__rail">
-            <b>02 / Inventario</b>
+            <b>03 / Inventario</b>
             <span>
               {sort === "recent" ? "Más recientes" :
                sort === "price-desc" ? "Mayor precio" :

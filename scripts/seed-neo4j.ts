@@ -35,13 +35,20 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
-// ─── fetch skin images from ByMykel CSGO-API (free, no auth) ─────────────────
+// ─── fetch full skin catalog from ByMykel CSGO-API (free, no auth) ──────────
 
-async function fetchSkinImages(): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+interface ByMykelSkin {
+  name?: string;
+  image?: string;
+  rarity?: { name?: string };
+  weapon?: { name?: string };
+  collections?: Array<{ name?: string }>;
+}
+
+async function fetchFullCatalog(): Promise<{ catalog: ByMykelSkin[]; imageMap: Map<string, string> }> {
+  const imageMap = new Map<string, string>();
   try {
-    console.log("  Fetching skin images from ByMykel CSGO-API...");
-    // Try multiple known endpoints for the ByMykel CSGO-API
+    console.log("  Fetching full skin catalog from ByMykel CSGO-API...");
     const candidates = [
       "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json",
       "https://bymykel.github.io/CSGO-API/api/en/skins.json",
@@ -52,15 +59,16 @@ async function fetchSkinImages(): Promise<Map<string, string>> {
       if (r.ok) { res = r; break; }
     }
     if (!res) throw new Error("all endpoints 404");
-    const skins = await res.json() as Array<{ name: string; image: string }>;
-    for (const s of skins) {
-      if (s.name && s.image) map.set(s.name, s.image);
+    const catalog = await res.json() as ByMykelSkin[];
+    for (const s of catalog) {
+      if (s.name && s.image) imageMap.set(s.name, s.image);
     }
-    console.log(`  ✓ ${map.size} image URLs loaded`);
+    console.log(`  ✓ ${catalog.length} catalog records, ${imageMap.size} images loaded`);
+    return { catalog, imageMap };
   } catch (e) {
-    console.log(`  ⚠  Image fetch failed (${e}) — imageUrl will be empty`);
+    console.log(`  ⚠  Catalog fetch failed (${e}) — using hardcoded skins only`);
+    return { catalog: [], imageMap };
   }
-  return map;
 }
 
 // ─── static data ──────────────────────────────────────────────────────────────
@@ -71,8 +79,10 @@ const WEAPONS = [
   "SSG 08", "SG 553", "MAC-10", "MP9", "FAMAS", "AUG", "P90",
   "Galil AR", "Five-SeveN", "CZ75-Auto", "P2000", "Tec-9",
   "Nova", "XM1014", "MAG-7", "Flip Knife", "Gut Knife",
+  "Sport Gloves", "Driver Gloves", "Hand Wraps", "Moto Gloves", "Specialist Gloves",
   "Falchion Knife", "Shadow Daggers", "Stiletto Knife", "Bowie Knife",
-  "Navaja Knife", "Talon Knife", "Skeleton Knife", "MP5-SD", "MP7",
+  "Navaja Knife", "Talon Knife", "Skeleton Knife", "Ursus Knife", "Paracord Knife",
+  "MP5-SD", "MP7",
   "UMP-45", "M249", "Negev",
 ];
 
@@ -168,109 +178,219 @@ const ALL_TRADERS = [
 // (name, weapon, collection, rarity, basePrice)
 const SKINS: [string, string, string, string, number][] = [
   // AK-47
-  ["AK-47 | Redline",             "AK-47",          "The Phoenix Collection",         "Classified",  30],
-  ["AK-47 | Case Hardened",       "AK-47",          "The Arms Deal Collection",       "Classified",  210],
-  ["AK-47 | Vulcan",              "AK-47",          "The Operation Breakout Weap.",   "Classified",  85],
-  ["AK-47 | Fire Serpent",        "AK-47",          "The Cobblestone Collection",     "Covert",      850],
-  ["AK-47 | Bloodsport",          "AK-47",          "The Danger Zone Collection",     "Covert",      55],
-  ["AK-47 | Neon Revolution",     "AK-47",          "The Chroma 2 Collection",        "Covert",      45],
-  ["AK-47 | Fuel Injector",       "AK-47",          "The Wildfire Collection",        "Covert",      100],
-  ["AK-47 | Asiimov",             "AK-47",          "The Phoenix Collection",         "Covert",      185],
-  ["AK-47 | Slate",               "AK-47",          "The Revolution Collection",      "Consumer",    3],
-  ["AK-47 | The Empress",         "AK-47",          "The Spectrum 2 Collection",      "Covert",      38],
-  ["AK-47 | Panthera onca",       "AK-47",          "The Fracture Collection",        "Classified",  28],
-  ["AK-47 | Ice Coaled",          "AK-47",          "The Revolution Collection",      "Classified",  22],
-  ["AK-47 | Wasteland Rebel",     "AK-47",          "The Chroma 2 Collection",        "Classified",  22],
+  // AK-47
+  ["AK-47 | Redline",             "AK-47",          "The Phoenix Collection",         "Classified",  22],
+  ["AK-47 | Case Hardened",       "AK-47",          "The Arms Deal Collection",       "Classified",  165],
+  ["AK-47 | Vulcan",              "AK-47",          "The Operation Breakout Weap.",   "Classified",  72],
+  ["AK-47 | Fire Serpent",        "AK-47",          "The Cobblestone Collection",     "Covert",      900],
+  ["AK-47 | Bloodsport",          "AK-47",          "The Danger Zone Collection",     "Covert",      48],
+  ["AK-47 | Neon Revolution",     "AK-47",          "The Chroma 2 Collection",        "Covert",      36],
+  ["AK-47 | Fuel Injector",       "AK-47",          "The Wildfire Collection",        "Covert",      95],
+  ["AK-47 | Asiimov",             "AK-47",          "The Phoenix Collection",         "Covert",      170],
+  ["AK-47 | Slate",               "AK-47",          "The Revolution Collection",      "Consumer",    0.05],
+  ["AK-47 | The Empress",         "AK-47",          "The Spectrum 2 Collection",      "Covert",      28],
+  ["AK-47 | Panthera onca",       "AK-47",          "The Fracture Collection",        "Classified",  24],
+  ["AK-47 | Ice Coaled",          "AK-47",          "The Revolution Collection",      "Classified",  18],
+  ["AK-47 | Wasteland Rebel",     "AK-47",          "The Chroma 2 Collection",        "Classified",  18],
   // AWP
-  ["AWP | Asiimov",               "AWP",            "The Phoenix Collection",         "Covert",      72],
-  ["AWP | Dragon Lore",           "AWP",            "The Cobblestone Collection",     "Covert",      2600],
-  ["AWP | Medusa",                "AWP",            "The Gods and Monsters Coll.",    "Covert",      1250],
-  ["AWP | Hyper Beast",           "AWP",            "The Falchion Collection",        "Covert",      88],
-  ["AWP | Wildfire",              "AWP",            "The Wildfire Collection",        "Covert",      620],
-  ["AWP | Oni Taiji",             "AWP",            "Operation Broken Fang Collection","Covert",     265],
-  ["AWP | Neo-Noir",              "AWP",            "The Clutch Collection",          "Covert",      155],
-  ["AWP | Atheris",               "AWP",            "The Prisma Collection",          "Classified",  32],
-  ["AWP | BOOM",                  "AWP",            "The CS20 Collection",            "Classified",  16],
-  ["AWP | Chromatic Aberration",  "AWP",            "The Prisma 2 Collection",        "Covert",      85],
-  ["AWP | Mortis",                "AWP",            "The CS20 Collection",            "Covert",      62],
-  ["AWP | Fever Dream",           "AWP",            "The Dreams & Nightmares Collection","Classified",32],
-  ["AWP | PAW",                   "AWP",            "The Riptide Collection",         "Classified",  24],
-  ["AWP | Silk Tiger",            "AWP",            "The Danger Zone Collection",     "Classified",  18],
+  ["AWP | Asiimov",               "AWP",            "The Phoenix Collection",         "Covert",      65],
+  ["AWP | Dragon Lore",           "AWP",            "The Cobblestone Collection",     "Covert",      2800],
+  ["AWP | Medusa",                "AWP",            "The Gods and Monsters Coll.",    "Covert",      1200],
+  ["AWP | Hyper Beast",           "AWP",            "The Falchion Collection",        "Covert",      75],
+  ["AWP | Wildfire",              "AWP",            "The Wildfire Collection",        "Covert",      580],
+  ["AWP | Oni Taiji",             "AWP",            "Operation Broken Fang Collection","Covert",     240],
+  ["AWP | Neo-Noir",              "AWP",            "The Clutch Collection",          "Covert",      145],
+  ["AWP | Atheris",               "AWP",            "The Prisma Collection",          "Classified",  28],
+  ["AWP | BOOM",                  "AWP",            "The CS20 Collection",            "Classified",  12],
+  ["AWP | Chromatic Aberration",  "AWP",            "The Prisma 2 Collection",        "Covert",      78],
+  ["AWP | Mortis",                "AWP",            "The CS20 Collection",            "Covert",      55],
+  ["AWP | Fever Dream",           "AWP",            "The Dreams & Nightmares Collection","Classified",28],
+  ["AWP | PAW",                   "AWP",            "The Riptide Collection",         "Classified",  20],
+  ["AWP | Silk Tiger",            "AWP",            "The Danger Zone Collection",     "Classified",  15],
   // M4
-  ["M4A1-S | Printstream",        "M4A1-S",         "The Fracture Collection",        "Covert",      165],
-  ["M4A1-S | Hot Rod",            "M4A1-S",         "The Chroma 2 Collection",        "Classified",  255],
-  ["M4A1-S | Knight",             "M4A1-S",         "The Gamma Collection",           "Classified",  660],
-  ["M4A1-S | Nightmare",          "M4A1-S",         "The Shadow Collection",          "Covert",      32],
-  ["M4A1-S | Mecha Industries",   "M4A1-S",         "The Revolution Collection",      "Classified",  18],
-  ["M4A1-S | Decimator",          "M4A1-S",         "The Gamma Collection",           "Covert",      28],
-  ["M4A1-S | Golden Coil",        "M4A1-S",         "The Gamma Collection",           "Covert",      48],
-  ["M4A4 | Howl",                 "M4A4",           "The Huntsman Collection",        "Contraband",  2100],
-  ["M4A4 | The Emperor",          "M4A4",           "The Prisma Collection",          "Covert",      27],
-  ["M4A4 | Neo-Noir",             "M4A4",           "The Clutch Collection",          "Covert",      38],
-  ["M4A4 | Spider Lily",          "M4A4",           "The Recoil Collection",          "Covert",      82],
-  ["M4A4 | Desolate Space",       "M4A4",           "The Revolver Case",              "Covert",      32],
+  ["M4A1-S | Printstream",        "M4A1-S",         "The Fracture Collection",        "Covert",      155],
+  ["M4A1-S | Hot Rod",            "M4A1-S",         "The Chroma 2 Collection",        "Classified",  240],
+  ["M4A1-S | Knight",             "M4A1-S",         "The Gamma Collection",           "Classified",  620],
+  ["M4A1-S | Nightmare",          "M4A1-S",         "The Shadow Collection",          "Covert",      28],
+  ["M4A1-S | Mecha Industries",   "M4A1-S",         "The Revolution Collection",      "Classified",  15],
+  ["M4A1-S | Decimator",          "M4A1-S",         "The Gamma Collection",           "Covert",      24],
+  ["M4A1-S | Golden Coil",        "M4A1-S",         "The Gamma Collection",           "Covert",      42],
+  ["M4A4 | Howl",                 "M4A4",           "The Huntsman Collection",        "Contraband",  2200],
+  ["M4A4 | The Emperor",          "M4A4",           "The Prisma Collection",          "Covert",      24],
+  ["M4A4 | Neo-Noir",             "M4A4",           "The Clutch Collection",          "Covert",      35],
+  ["M4A4 | Spider Lily",          "M4A4",           "The Recoil Collection",          "Covert",      78],
+  ["M4A4 | Desolate Space",       "M4A4",           "The Revolver Case",              "Covert",      28],
   // USP / DEagle / Glock
-  ["USP-S | Kill Confirmed",      "USP-S",          "The Shadow Collection",          "Covert",      185],
-  ["USP-S | Orion",               "USP-S",          "The Chroma 2 Collection",        "Classified",  58],
-  ["USP-S | Monster Mashup",      "USP-S",          "The Halloween Collection",       "Classified",  26],
-  ["USP-S | Cortex",              "USP-S",          "The Dreams & Nightmares Collection","Covert",   32],
-  ["USP-S | Caiman",              "USP-S",          "The Canals Collection",          "Classified",  18],
-  ["Desert Eagle | Printstream",  "Desert Eagle",   "The Fracture Collection",        "Covert",      155],
-  ["Desert Eagle | Blaze",        "Desert Eagle",   "The Arms Deal Collection",       "Restricted",  515],
-  ["Desert Eagle | Sunset Storm", "Desert Eagle",   "The Recoil Collection",          "Classified",  8],
-  ["Desert Eagle | Ocean Drive",  "Desert Eagle",   "The Revolution Collection",      "Classified",  26],
-  ["Desert Eagle | Hand Cannon",  "Desert Eagle",   "The Shadow Collection",          "Covert",      780],
-  ["Glock-18 | Fade",             "Glock-18",       "The Assault Collection",         "Restricted",  660],
+  ["USP-S | Kill Confirmed",      "USP-S",          "The Shadow Collection",          "Covert",      155],
+  ["USP-S | Orion",               "USP-S",          "The Chroma 2 Collection",        "Classified",  52],
+  ["USP-S | Monster Mashup",      "USP-S",          "The Halloween Collection",       "Classified",  22],
+  ["USP-S | Cortex",              "USP-S",          "The Dreams & Nightmares Collection","Covert",   28],
+  ["USP-S | Caiman",              "USP-S",          "The Canals Collection",          "Classified",  15],
+  ["Desert Eagle | Printstream",  "Desert Eagle",   "The Fracture Collection",        "Covert",      145],
+  ["Desert Eagle | Blaze",        "Desert Eagle",   "The Arms Deal Collection",       "Restricted",  480],
+  ["Desert Eagle | Sunset Storm 壱","Desert Eagle",  "The Recoil Collection",          "Classified",  7],
+  ["Desert Eagle | Ocean Drive",  "Desert Eagle",   "The Revolution Collection",      "Classified",  22],
+  ["Desert Eagle | Hand Cannon",  "Desert Eagle",   "The Shadow Collection",          "Covert",      750],
+  ["Glock-18 | Fade",             "Glock-18",       "The Assault Collection",         "Restricted",  620],
   ["Glock-18 | Gamma Doppler",    "Glock-18",       "The Gamma 2 Collection",         "Covert",      310],
-  ["Glock-18 | Water Elemental",  "Glock-18",       "The Breakout Collection",        "Restricted",  12],
-  ["Glock-18 | Bullet Queen",     "Glock-18",       "The Clutch Collection",          "Covert",      28],
-  // Knives
-  ["Karambit | Doppler",          "Karambit",       "N/A",                            "Covert",      940],
-  ["Karambit | Fade",             "Karambit",       "N/A",                            "Covert",      1250],
-  ["Karambit | Case Hardened",    "Karambit",       "N/A",                            "Covert",      820],
-  ["Butterfly Knife | Doppler",   "Butterfly Knife","N/A",                            "Covert",      1850],
+  ["Glock-18 | Water Elemental",  "Glock-18",       "The Breakout Collection",        "Restricted",  10],
+  ["Glock-18 | Bullet Queen",     "Glock-18",       "The Clutch Collection",          "Covert",      24],
+  // Knives — prices reflect FT median on CsFloat June 2025
+  ["Karambit | Doppler",          "Karambit",       "N/A",                            "Covert",      1000],
+  ["Karambit | Fade",             "Karambit",       "N/A",                            "Covert",      1400],
+  ["Karambit | Case Hardened",    "Karambit",       "N/A",                            "Covert",      850],
+  ["Butterfly Knife | Doppler",   "Butterfly Knife","N/A",                            "Covert",      1900],
   ["M9 Bayonet | Lore",           "M9 Bayonet",     "N/A",                            "Covert",      620],
   ["Flip Knife | Doppler",        "Flip Knife",     "N/A",                            "Covert",      420],
-  ["Gut Knife | Crimson Web",     "Gut Knife",      "N/A",                            "Covert",      285],
-  ["Falchion Knife | Gamma Doppler","Falchion Knife","N/A",                           "Covert",      380],
-  ["Shadow Daggers | Doppler",    "Shadow Daggers", "N/A",                            "Covert",      195],
-  ["Stiletto Knife | Tiger Tooth","Stiletto Knife", "N/A",                            "Covert",      650],
-  ["Bowie Knife | Slaughter",     "Bowie Knife",    "N/A",                            "Covert",      380],
-  ["Navaja Knife | Blue Steel",   "Navaja Knife",   "N/A",                            "Covert",      165],
-  ["Talon Knife | Fade",          "Talon Knife",    "N/A",                            "Covert",      780],
-  ["Skeleton Knife | Case Hardened","Skeleton Knife","N/A",                           "Covert",      920],
+  ["Gut Knife | Crimson Web",     "Gut Knife",      "N/A",                            "Covert",      260],
+  ["Falchion Knife | Gamma Doppler","Falchion Knife","N/A",                           "Covert",      360],
+  ["Shadow Daggers | Doppler",    "Shadow Daggers", "N/A",                            "Covert",      200],
+  ["Stiletto Knife | Tiger Tooth","Stiletto Knife", "N/A",                            "Covert",      620],
+  ["Bowie Knife | Slaughter",     "Bowie Knife",    "N/A",                            "Covert",      360],
+  ["Navaja Knife | Blue Steel",   "Navaja Knife",   "N/A",                            "Covert",      155],
+  ["Talon Knife | Fade",          "Talon Knife",    "N/A",                            "Covert",      800],
+  ["Talon Knife | Marble Fade",   "Talon Knife",    "N/A",                            "Covert",      920],
+  ["Skeleton Knife | Case Hardened","Skeleton Knife","N/A",                           "Covert",      850],
+  ["Karambit | Marble Fade",      "Karambit",       "N/A",                            "Covert",      1750],
+  ["M9 Bayonet | Doppler",        "M9 Bayonet",     "N/A",                            "Covert",      580],
+  ["Ursus Knife | Doppler",       "Ursus Knife",    "N/A",                            "Covert",      420],
+  ["Paracord Knife | Case Hardened","Paracord Knife","N/A",                           "Covert",      260],
   // Rifles
-  ["SG 553 | Integrale",          "SG 553",         "The Danger Zone Collection",     "Classified",  26],
-  ["SG 553 | Colony IV",          "SG 553",         "The Canals Collection",          "Restricted",  6],
-  ["SSG 08 | Blood in the Water", "SSG 08",         "The Riptide Collection",         "Covert",      310],
-  ["SSG 08 | Dragonfire",         "SSG 08",         "The Wildfire Collection",        "Covert",      52],
-  ["FAMAS | Mecha Industries",    "FAMAS",          "The Revolution Collection",      "Classified",  22],
-  ["FAMAS | Commemoration",       "FAMAS",          "The CS20 Collection",            "Classified",  16],
-  ["AUG | Akihabara Accept",      "AUG",            "The Operation Vanguard Coll.",   "Classified",  52],
-  ["AUG | Momentum",              "AUG",            "The Spectrum 2 Collection",      "Classified",  28],
-  ["Galil AR | Chatterbox",       "Galil AR",       "The Cobblestone Collection",     "Classified",  35],
-  ["Galil AR | Cerberus",         "Galil AR",       "The Hydra Collection",           "Classified",  28],
+  ["SG 553 | Integrale",          "SG 553",         "The Danger Zone Collection",     "Classified",  22],
+  ["SG 553 | Colony IV",          "SG 553",         "The Canals Collection",          "Restricted",  5],
+  ["SSG 08 | Blood in the Water", "SSG 08",         "The Riptide Collection",         "Covert",      295],
+  ["SSG 08 | Dragonfire",         "SSG 08",         "The Wildfire Collection",        "Covert",      48],
+  ["FAMAS | Mecha Industries",    "FAMAS",          "The Revolution Collection",      "Classified",  18],
+  ["FAMAS | Commemoration",       "FAMAS",          "The CS20 Collection",            "Classified",  12],
+  ["AUG | Akihabara Accept",      "AUG",            "The Operation Vanguard Coll.",   "Classified",  48],
+  ["AUG | Momentum",              "AUG",            "The Spectrum 2 Collection",      "Classified",  24],
+  ["Galil AR | Chatterbox",       "Galil AR",       "The Cobblestone Collection",     "Classified",  32],
+  ["Galil AR | Cerberus",         "Galil AR",       "The Hydra Collection",           "Classified",  24],
   // SMGs
-  ["MAC-10 | Neon Rider",         "MAC-10",         "The Prisma Collection",          "Covert",      38],
-  ["MP9 | Featherweight",         "MP9",            "The Chroma Collection",          "Classified",  9],
-  ["P90 | Asiimov",               "P90",            "The Phoenix Collection",         "Classified",  26],
-  ["MP5-SD | Phosphor",           "MP5-SD",         "The St. Marc Collection",        "Classified",  14],
-  ["MP7 | Whiteout",              "MP7",            "The Rising Sun Collection",      "Classified",  38],
-  ["UMP-45 | Momentum",           "UMP-45",         "The Dreams & Nightmares Collection","Classified",18],
+  ["MAC-10 | Neon Rider",         "MAC-10",         "The Prisma Collection",          "Covert",      35],
+  ["MP9 | Featherweight",         "MP9",            "The Chroma Collection",          "Classified",  8],
+  ["P90 | Asiimov",               "P90",            "The Phoenix Collection",         "Classified",  22],
+  ["MP5-SD | Phosphor",           "MP5-SD",         "The St. Marc Collection",        "Classified",  12],
+  ["MP7 | Whiteout",              "MP7",            "The Rising Sun Collection",      "Classified",  35],
+  ["UMP-45 | Momentum",           "UMP-45",         "The Dreams & Nightmares Collection","Classified",15],
   // Pistols
-  ["Five-SeveN | Hyper Beast",    "Five-SeveN",     "The Falchion Collection",        "Covert",      18],
-  ["Five-SeveN | Flame Test",     "Five-SeveN",     "The 2018 Nuke Collection",       "Classified",  12],
-  ["CZ75-Auto | Yellow Jacket",   "CZ75-Auto",      "The Breakout Collection",        "Classified",  14],
-  ["P2000 | Ocean Foam",          "P2000",          "The Arms Deal 2 Collection",     "Classified",  22],
-  ["Tec-9 | Titanium Bit",        "Tec-9",          "The Shadow Collection",          "Restricted",  8],
+  ["Five-SeveN | Hyper Beast",    "Five-SeveN",     "The Falchion Collection",        "Covert",      16],
+  ["Five-SeveN | Flame Test",     "Five-SeveN",     "The 2018 Nuke Collection",       "Classified",  10],
+  ["CZ75-Auto | Yellow Jacket",   "CZ75-Auto",      "The Breakout Collection",        "Classified",  12],
+  ["P2000 | Ocean Foam",          "P2000",          "The Arms Deal 2 Collection",     "Classified",  20],
+  ["Tec-9 | Titanium Bit",        "Tec-9",          "The Shadow Collection",          "Restricted",  7],
   // Shotguns/Heavy
-  ["Nova | Hyper Beast",          "Nova",           "The Falchion Collection",        "Covert",      28],
-  ["XM1014 | Entombed",           "XM1014",         "The Prisma 2 Collection",        "Classified",  16],
-  ["MAG-7 | Praetorian",          "MAG-7",          "The Chroma 2 Collection",        "Classified",  22],
-  ["M249 | Spectre",              "M249",           "The Cobblestone Collection",     "Restricted",  8],
-  ["Negev | Lionfish",            "Negev",          "The Prisma Collection",          "Classified",  12],
-  ["AK-47 | Head Shot",           "AK-47",          "The CS20 Collection",            "Classified",  18],
+  ["Nova | Hyper Beast",          "Nova",           "The Falchion Collection",        "Covert",      24],
+  ["XM1014 | Entombed",           "XM1014",         "The Prisma 2 Collection",        "Classified",  14],
+  ["MAG-7 | Praetorian",          "MAG-7",          "The Chroma 2 Collection",        "Classified",  18],
+  ["M249 | Spectre",              "M249",           "The Cobblestone Collection",     "Restricted",  6],
+  ["Negev | Lionfish",            "Negev",          "The Prisma Collection",          "Classified",  10],
+  ["AK-47 | Head Shot",           "AK-47",          "The CS20 Collection",            "Classified",  15],
+  // Gloves — CsFloat FT median June 2025
+  ["Sport Gloves | Pandora's Box","Sport Gloves",   "The Glove Collection",           "Contraband",  2400],
+  ["Sport Gloves | Vice",         "Sport Gloves",   "The Glove Collection",           "Contraband",  950],
+  ["Driver Gloves | King Snake",  "Driver Gloves",  "The Glove Collection",           "Contraband",  720],
+  ["Driver Gloves | Crimson Weave","Driver Gloves", "The Glove Collection",           "Contraband",  440],
+  ["Hand Wraps | Cobalt Skulls",  "Hand Wraps",     "The Glove Collection",           "Contraband",  1400],
+  ["Moto Gloves | Eclipse",       "Moto Gloves",    "The Glove Collection",           "Contraband",  520],
+  ["Specialist Gloves | Crimson Kimono","Specialist Gloves","The Glove Collection",   "Contraband",  900],
 ];
+
+// (id, name, tournament, rarity, value)
+const STICKERS: [string, string, string, string, number][] = [
+  ["sticker-titan-holo-kato14",    "Sticker | Titan (Holo) | Katowice 2014",          "Katowice 2014",     "Extraordinary", 4800],
+  ["sticker-ibuypower-holo-kato14","Sticker | iBUYPOWER (Holo) | Katowice 2014",       "Katowice 2014",     "Extraordinary", 28000],
+  ["sticker-navi-holo-kato14",     "Sticker | Natus Vincere (Holo) | Katowice 2014",   "Katowice 2014",     "Extraordinary", 2200],
+  ["sticker-virtus-pro-kato14",    "Sticker | Virtus.pro (Holo) | Katowice 2014",      "Katowice 2014",     "Extraordinary", 3100],
+  ["sticker-fnatic-holo-kato15",   "Sticker | Fnatic (Holo) | Katowice 2015",          "Katowice 2015",     "Extraordinary", 780],
+  ["sticker-navi-gold-paris23",    "Sticker | Natus Vincere (Gold) | Paris 2023",       "Paris 2023",        "Extraordinary", 380],
+  ["sticker-cloud9-holo-bos18",    "Sticker | Cloud9 (Holo) | Boston 2018",             "Boston 2018",       "Extraordinary", 420],
+  ["sticker-liquid-holo-berlin19", "Sticker | Team Liquid (Holo) | Berlin 2019",        "Berlin 2019",       "Extraordinary", 95],
+  ["sticker-astralis-gold-kat19",  "Sticker | Astralis (Gold) | Katowice 2019",         "Katowice 2019",     "Extraordinary", 260],
+  ["sticker-s1mple-autograph",     "Sticker | s1mple | Stockholm 2021",                 "Stockholm 2021",    "High Grade",    45],
+  ["sticker-zywoo-autograph",      "Sticker | ZywOo | Antwerp 2022",                    "Antwerp 2022",      "High Grade",    28],
+];
+
+async function fetchStickerImages(): Promise<Map<string, string>> {
+  const map = new Map<string, string>(); // lowercase key → url
+  try {
+    const r = await fetch("https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/stickers.json");
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json() as Array<{ name?: string; image?: string }>;
+    for (const s of data) {
+      if (s.name && s.image) map.set(s.name.toLowerCase(), s.image);
+    }
+    console.log(`  ✓ ${map.size} sticker images loaded`);
+  } catch (e) {
+    console.log(`  ⚠  Sticker image fetch failed (${e})`);
+  }
+  return map;
+}
+
+// ─── rarity normalization (ByMykel → our internal names) ─────────────────────
+
+const RARITY_NORMALIZE: Record<string, string> = {
+  "Consumer Grade":  "Consumer",
+  "Industrial Grade":"Industrial",
+  "Mil-Spec Grade":  "Mil-Spec",
+  "Restricted":      "Restricted",
+  "Classified":      "Classified",
+  "Covert":          "Covert",
+  "Contraband":      "Contraband",
+  "Extraordinary":   "Covert",   // gloves use this label in ByMykel
+};
+
+// Median Field-Tested price per rarity — calibrated against CsFloat June 2025
+const RARITY_BASE_PRICE: Record<string, number> = {
+  "Consumer": 0.05, "Industrial": 0.12, "Mil-Spec": 1.20,
+  "Restricted": 4.50, "Classified": 16, "Covert": 55, "Contraband": 1500,
+};
+
+const KNIFE_WEAPONS = new Set([
+  "Bayonet","Huntsman Knife",
+  "Karambit","Butterfly Knife","M9 Bayonet","Flip Knife","Gut Knife",
+  "Falchion Knife","Shadow Daggers","Stiletto Knife","Bowie Knife",
+  "Navaja Knife","Talon Knife","Skeleton Knife","Ursus Knife","Paracord Knife",
+  "Survival Knife","Nomad Knife","Classic Knife",
+]);
+
+const GLOVE_WEAPONS = new Set([
+  "Sport Gloves","Driver Gloves","Hand Wraps","Moto Gloves","Specialist Gloves",
+  "Bloodhound Gloves","Hydra Gloves","Broken Fang Gloves",
+]);
+
+// ─── build extended catalog from ByMykel data ────────────────────────────────
+
+function buildDynamicSkins(catalog: ByMykelSkin[]): typeof SKINS {
+  const existing = new Set(SKINS.map(([name]) => name.trim().toLowerCase()));
+  const result: typeof SKINS = [];
+
+  for (const rec of catalog) {
+    const name = rec.name?.trim();
+    if (!name) continue;
+    // Skip StatTrak and Souvenir variants — keep only base skins
+    if (name.startsWith("StatTrak™") || name.startsWith("Souvenir")) continue;
+    // Skip if already covered by hardcoded SKINS (keeps exact prices for iconic items)
+    if (existing.has(name.toLowerCase())) continue;
+
+    const weapon = rec.weapon?.name?.trim();
+    if (!weapon) continue;
+
+    const rarityRaw = rec.rarity?.name?.trim() ?? "Mil-Spec Grade";
+    const rarity = RARITY_NORMALIZE[rarityRaw] ?? "Mil-Spec";
+
+    const collection = rec.collections?.[0]?.name?.trim() ?? "N/A";
+
+    let basePrice = RARITY_BASE_PRICE[rarity] ?? 15;
+    // Knives and gloves carry a premium — Covert knife median ~$120, glove ~$85
+    if (KNIFE_WEAPONS.has(weapon)) basePrice = Math.round(basePrice * 2.2);
+    else if (GLOVE_WEAPONS.has(weapon)) basePrice = Math.round(basePrice * 1.55);
+
+    result.push([name, weapon, collection, rarity, basePrice]);
+  }
+
+  return result;
+}
 
 const WEAR_TIERS: { wear: string; floatMin: number; floatMax: number; weight: number }[] = [
   { wear: "Factory New",   floatMin: 0.00, floatMax: 0.07, weight: 15 },
@@ -317,22 +437,30 @@ async function createConstraints(session: ReturnType<typeof driver.session>) {
     "CREATE CONSTRAINT weapon_id IF NOT EXISTS FOR (n:Weapon) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT collection_id IF NOT EXISTS FOR (n:Collection) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT snapshot_id IF NOT EXISTS FOR (n:PriceSnapshot) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT sticker_id IF NOT EXISTS FOR (n:Sticker) REQUIRE n.id IS UNIQUE",
   ];
   for (const c of constraints) {
     try { await session.run(c); } catch { /* already exists */ }
   }
 }
 
-async function seedWeaponsAndCollections(session: ReturnType<typeof driver.session>) {
+async function seedWeaponsAndCollections(
+  session: ReturnType<typeof driver.session>,
+  allSkins: typeof SKINS,
+) {
+  // Merge weapons from static list + any extra weapons from dynamic catalog
+  const weaponNames = new Set([...WEAPONS, ...allSkins.map(([, w]) => w)]);
   await session.run(
     `UNWIND $weapons AS w MERGE (n:Weapon {id: w.id}) SET n.name = w.name`,
-    { weapons: WEAPONS.map((name) => ({ id: uid("w", name), name })) }
+    { weapons: [...weaponNames].map((name) => ({ id: uid("w", name), name })) }
   );
+  // Collections from all skins
+  const collectionNames = new Set([...COLLECTIONS, ...allSkins.map(([, , c]) => c).filter((c) => c !== "N/A")]);
   await session.run(
     `UNWIND $cols AS c MERGE (n:Collection {id: c.id}) SET n.name = c.name`,
-    { cols: COLLECTIONS.map((name) => ({ id: uid("c", name), name })) }
+    { cols: [...collectionNames].map((name) => ({ id: uid("c", name), name })) }
   );
-  console.log(`  ✓ ${WEAPONS.length} weapons, ${COLLECTIONS.length} collections`);
+  console.log(`  ✓ ${weaponNames.size} weapons, ${collectionNames.size} collections`);
 }
 
 async function seedMarketplaces(session: ReturnType<typeof driver.session>) {
@@ -402,27 +530,68 @@ async function seedTraders(session: ReturnType<typeof driver.session>) {
   console.log(`  ✓ ${ALL_TRADERS.length} traders + connections`);
 }
 
-async function seedSkins(session: ReturnType<typeof driver.session>, imageMap: Map<string, string>) {
-  for (const [name, weapon, collection, rarity] of SKINS) {
-    const skinId     = uid("skin", name);
-    const weaponId   = uid("w", weapon);
-    const collectionId = uid("c", collection);
-    const imageUrl   = imageMap.get(name) ?? "";
+type SkinRow = {
+  id: string; name: string; rarity: string; imageUrl: string;
+  skinType: string; weaponId: string; weaponName: string; collectionId: string; collectionName: string;
+};
 
+async function seedSkins(
+  session: ReturnType<typeof driver.session>,
+  allSkins: typeof SKINS,
+  imageMap: Map<string, string>,
+) {
+  const rows: SkinRow[] = allSkins.map(([name, weapon, collection, rarity]) => ({
+    id: uid("skin", name),
+    name,
+    rarity,
+    imageUrl: imageMap.get(name) ?? "",
+    skinType: KNIFE_WEAPONS.has(weapon) ? "Knife" : GLOVE_WEAPONS.has(weapon) ? "Gloves" : "Weapon",
+    weaponId: uid("w", weapon),
+    weaponName: weapon,
+    collectionId: uid("c", collection),
+    collectionName: collection,
+  }));
+
+  // UNWIND batch by skinType — dynamic label must be in query string, so we batch per type
+  for (const skinType of ["Weapon", "Knife", "Gloves"] as const) {
+    const typed = rows.filter((r) => r.skinType === skinType);
+    if (typed.length === 0) continue;
+    const batchSize = 100;
+    for (let i = 0; i < typed.length; i += batchSize) {
+      await session.run(
+        `UNWIND $rows AS r
+         MERGE (s:Skin:${skinType} {id: r.id})
+         SET s.name = r.name, s.rarity = r.rarity, s.imageUrl = r.imageUrl, s.skinType = $skinType`,
+        { rows: typed.slice(i, i + batchSize), skinType }
+      );
+    }
+  }
+
+  // Relationships — MERGE weapon (in case dynamic catalog has new weapon names) + collection
+  const batchSize = 200;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
     await session.run(
-      `MERGE (s:Skin {id: $skinId})
-       SET s.name = $name, s.rarity = $rarity, s.imageUrl = $imageUrl
-       WITH s
-       MATCH (w:Weapon {id: $weaponId})
-       MERGE (s)-[:FOR_WEAPON]->(w)
-       WITH s
-       MERGE (c:Collection {id: $collectionId})
+      `UNWIND $batch AS r
+       MATCH (s:Skin {id: r.id})
+       MERGE (w:Weapon {id: r.weaponId}) SET w.name = r.weaponName
+       MERGE (s)-[:FOR_WEAPON]->(w)`,
+      { batch }
+    );
+    await session.run(
+      `UNWIND $batch AS r
+       MERGE (c:Collection {id: r.collectionId}) SET c.name = r.collectionName
+       WITH c, r
+       MATCH (s:Skin {id: r.id})
        MERGE (s)-[:BELONGS_TO]->(c)`,
-      { skinId, name, rarity, imageUrl, weaponId, collectionId }
+      { batch }
     );
   }
-  const withImages = SKINS.filter(([name]) => imageMap.has(name)).length;
-  console.log(`  ✓ ${SKINS.length} skins (${withImages} with images)`);
+
+  const knives = rows.filter((r) => r.skinType === "Knife").length;
+  const gloves = rows.filter((r) => r.skinType === "Gloves").length;
+  const withImages = rows.filter((r) => r.imageUrl).length;
+  console.log(`  ✓ ${rows.length} skins (${withImages} with images) — ${knives} knives · ${gloves} gloves · ${rows.length - knives - gloves} weapons`);
 }
 
 interface TxRecord {
@@ -518,42 +687,66 @@ function buildSuspiciousCycle(
   return txs;
 }
 
-async function seedInstancesAndTransactions(session: ReturnType<typeof driver.session>) {
+async function seedInstancesAndTransactions(
+  session: ReturnType<typeof driver.session>,
+  allSkins: typeof SKINS,
+) {
   const legitTraderIds = [...TRADERS_A, ...TRADERS_B, ...TRADERS_C].map((t) => t.id);
   const allTransactions: TxRecord[] = [];
-  let instanceCount = 0;
 
-  for (const [name, , , , basePrice] of SKINS) {
+  // ── Build all instances in memory, then UNWIND batch (avoids N individual queries) ──
+  type InstRow = { id: string; floatValue: number; wear: string; serial: string; skinId: string };
+  const allInstances: (InstRow & { adjustedPrice: number })[] = [];
+
+  for (const [name, , , , basePrice] of allSkins) {
     const skinId = uid("skin", name);
-    // More instances: cheap skins get 5, mid 3, expensive 2
     const instancesForSkin = basePrice > 800 ? 2 : basePrice > 150 ? 3 : 5;
-
     for (let inst = 0; inst < instancesForSkin; inst++) {
       const { wear, floatValue } = pickWear();
-      const adjustedPrice = Math.round(basePrice * floatMultiplier(floatValue, wear) * 100) / 100;
-      const instanceId = `inst-${skinId}-${inst}`;
-
-      await session.run(
-        `MERGE (i:SkinInstance {id: $instanceId})
-         SET i.floatValue = $floatValue, i.wear = $wear, i.serial = $serial
-         WITH i MATCH (s:Skin {id: $skinId}) MERGE (i)-[:INSTANCE_OF]->(s)`,
-        { instanceId, floatValue, wear, serial: `${Math.floor(Math.random() * 99999) + 1}`, skinId }
-      );
-      instanceCount++;
-
-      const txCount = Math.floor(Math.random() * 5 + 4); // 4-8
-      const subset = shuffle(legitTraderIds).slice(0, 5);
-      allTransactions.push(...buildChain(instanceId, floatValue, adjustedPrice, subset, 90 - inst * 5, txCount));
+      allInstances.push({
+        id: `inst-${skinId}-${inst}`,
+        floatValue, wear,
+        serial: `${Math.floor(Math.random() * 99999) + 1}`,
+        skinId,
+        adjustedPrice: Math.round(basePrice * floatMultiplier(floatValue, wear) * 100) / 100,
+      });
     }
+  }
+
+  // Batch UNWIND instance creation — ~200 per query instead of 1 per query
+  const INST_BATCH = 200;
+  for (let i = 0; i < allInstances.length; i += INST_BATCH) {
+    const batch: InstRow[] = allInstances.slice(i, i + INST_BATCH);
+    await session.run(
+      `UNWIND $batch AS inst
+       MERGE (i:SkinInstance {id: inst.id})
+       SET i.floatValue = inst.floatValue, i.wear = inst.wear, i.serial = inst.serial
+       WITH i, inst
+       MATCH (s:Skin {id: inst.skinId})
+       MERGE (i)-[:INSTANCE_OF]->(s)`,
+      { batch }
+    );
+  }
+
+  // Build transactions for all regular instances
+  for (let idx = 0; idx < allInstances.length; idx++) {
+    const { id: instanceId, floatValue, adjustedPrice } = allInstances[idx];
+    const txCount = Math.floor(Math.random() * 5 + 4);
+    const subset = shuffle(legitTraderIds).slice(0, 5);
+    allTransactions.push(...buildChain(instanceId, floatValue, adjustedPrice, subset, 90, txCount));
   }
 
   // Suspicious instances — one per cluster, with cycle patterns
   const SUSPICIOUS: { name: string; inst: number; basePrice: number; cycleTraders: string[]; rounds: number }[] = [
-    { name: "AK-47 | Case Hardened",  inst: 99, basePrice: 4200, cycleTraders: SHADOW_1.map((t) => t.id), rounds: 2 },
-    { name: "AWP | Dragon Lore",      inst: 99, basePrice: 2800, cycleTraders: SHADOW_2.map((t) => t.id), rounds: 2 },
-    { name: "Karambit | Fade",        inst: 99, basePrice: 1500, cycleTraders: SHADOW_3.map((t) => t.id), rounds: 3 },
-    { name: "M4A4 | Howl",            inst: 99, basePrice: 2200, cycleTraders: SHADOW_1.map((t) => t.id), rounds: 1 },
-    { name: "Butterfly Knife | Doppler", inst: 99, basePrice: 2000, cycleTraders: SHADOW_2.map((t) => t.id), rounds: 2 },
+    { name: "AK-47 | Case Hardened",       inst: 99, basePrice: 4200, cycleTraders: SHADOW_1.map((t) => t.id), rounds: 2 },
+    { name: "AWP | Dragon Lore",            inst: 99, basePrice: 2800, cycleTraders: SHADOW_2.map((t) => t.id), rounds: 2 },
+    { name: "Karambit | Fade",              inst: 99, basePrice: 1500, cycleTraders: SHADOW_3.map((t) => t.id), rounds: 3 },
+    { name: "M4A4 | Howl",                 inst: 99, basePrice: 2200, cycleTraders: SHADOW_1.map((t) => t.id), rounds: 1 },
+    { name: "Butterfly Knife | Doppler",    inst: 99, basePrice: 2000, cycleTraders: SHADOW_2.map((t) => t.id), rounds: 2 },
+    // New high-value items injected into fraud rings — gloves in knife-flip scheme, rare knife in AWP wash ring
+    { name: "Sport Gloves | Pandora's Box", inst: 99, basePrice: 2400, cycleTraders: SHADOW_3.map((t) => t.id), rounds: 2 },
+    { name: "Hand Wraps | Cobalt Skulls",   inst: 99, basePrice: 1400, cycleTraders: SHADOW_3.map((t) => t.id), rounds: 1 },
+    { name: "Karambit | Marble Fade",       inst: 99, basePrice: 1900, cycleTraders: SHADOW_2.map((t) => t.id), rounds: 2 },
   ];
 
   for (const { name, inst, basePrice, cycleTraders, rounds } of SUSPICIOUS) {
@@ -567,8 +760,6 @@ async function seedInstancesAndTransactions(session: ReturnType<typeof driver.se
        WITH i MATCH (s:Skin {id: $skinId}) MERGE (i)-[:INSTANCE_OF]->(s)`,
       { instanceId, floatValue, serial: `SUSP-${inst}`, skinId }
     );
-    instanceCount++;
-
     // Pre-chain: legit trader → suspicious ring entry
     const preChain = buildChain(instanceId, floatValue, basePrice * 0.7,
       [pick(legitTraderIds), cycleTraders[0]], 50, 2);
@@ -578,7 +769,7 @@ async function seedInstancesAndTransactions(session: ReturnType<typeof driver.se
     allTransactions.push(...buildSuspiciousCycle(instanceId, floatValue, basePrice * 0.85, cycleTraders, 40, rounds));
   }
 
-  console.log(`  ✓ ${instanceCount} instances, ${allTransactions.length} transactions queued`);
+  console.log(`  ✓ ${allInstances.length} instances + ${SUSPICIOUS.length} suspicious, ${allTransactions.length} transactions queued`);
 
   // Bulk insert transactions
   const batchSize = 50;
@@ -608,15 +799,60 @@ async function seedInstancesAndTransactions(session: ReturnType<typeof driver.se
   console.log(`  ✓ ${allTransactions.length} transactions inserted`);
 }
 
+async function seedStickers(session: ReturnType<typeof driver.session>, stickerImages: Map<string, string>) {
+  await session.run(
+    `UNWIND $stickers AS s
+     MERGE (n:Sticker {id: s.id})
+     SET n.name = s.name, n.tournament = s.tournament,
+         n.rarity = s.rarity, n.valueUsd = s.valueUsd, n.imageUrl = s.imageUrl`,
+    {
+      stickers: STICKERS.map(([id, name, tournament, rarity, valueUsd]) => ({
+        id, name, tournament, rarity, valueUsd,
+        imageUrl: stickerImages.get(name.toLowerCase()) ?? "",
+      })),
+    }
+  );
+
+  // Apply stickers to a selection of high-value instances with 1-4 slots
+  const APPLICATIONS: { instanceId: string; stickerId: string; slot: number; wear: number }[] = [
+    { instanceId: "inst-skin-ak-47-fire-serpent-0",     stickerId: "sticker-titan-holo-kato14",     slot: 1, wear: 0.0  },
+    { instanceId: "inst-skin-ak-47-fire-serpent-0",     stickerId: "sticker-ibuypower-holo-kato14", slot: 2, wear: 0.02 },
+    { instanceId: "inst-skin-ak-47-fire-serpent-0",     stickerId: "sticker-navi-holo-kato14",      slot: 3, wear: 0.0  },
+    { instanceId: "inst-skin-ak-47-fire-serpent-0",     stickerId: "sticker-virtus-pro-kato14",     slot: 4, wear: 0.01 },
+    { instanceId: "inst-skin-awp-dragon-lore-0",        stickerId: "sticker-titan-holo-kato14",     slot: 1, wear: 0.0  },
+    { instanceId: "inst-skin-awp-dragon-lore-0",        stickerId: "sticker-fnatic-holo-kato15",    slot: 2, wear: 0.05 },
+    { instanceId: "inst-skin-m4a4-howl-0",              stickerId: "sticker-cloud9-holo-bos18",     slot: 1, wear: 0.0  },
+    { instanceId: "inst-skin-m4a4-howl-0",              stickerId: "sticker-astralis-gold-kat19",   slot: 2, wear: 0.0  },
+    { instanceId: "inst-skin-karambit-fade-0",          stickerId: "sticker-s1mple-autograph",      slot: 1, wear: 0.12 },
+    { instanceId: "inst-skin-butterfly-knife-doppler-0",stickerId: "sticker-zywoo-autograph",       slot: 1, wear: 0.08 },
+    { instanceId: "inst-skin-ak-47-case-hardened-0",    stickerId: "sticker-navi-gold-paris23",     slot: 1, wear: 0.0  },
+    { instanceId: "inst-skin-awp-asiimov-0",            stickerId: "sticker-liquid-holo-berlin19",  slot: 1, wear: 0.18 },
+  ];
+
+  for (const { instanceId, stickerId, slot, wear } of APPLICATIONS) {
+    await session.run(
+      `MATCH (i:SkinInstance {id: $instanceId}), (s:Sticker {id: $stickerId})
+       MERGE (i)-[r:STICKER_APPLIED {slot: $slot}]->(s)
+       SET r.wear = $wear`,
+      { instanceId, stickerId, slot, wear }
+    ).catch(() => { /* instance may not exist if skin was skipped */ });
+  }
+
+  console.log(`  ✓ ${STICKERS.length} stickers + ${APPLICATIONS.length} STICKER_APPLIED relations`);
+}
+
 // PriceSnapshot nodes power the crossVenue patterns query
-async function seedPriceSnapshots(session: ReturnType<typeof driver.session>) {
+async function seedPriceSnapshots(
+  session: ReturnType<typeof driver.session>,
+  allSkins: typeof SKINS,
+) {
   const snapshots: Array<{
     id: string; skinId: string; marketplaceId: string;
     priceUsd: number; wear: string; timestamp: string;
   }> = [];
 
-  // Pick skins that exist on multiple marketplaces with price variance
-  const crossVenueSkins = SKINS.filter(([, , , , p]) => p >= 10 && p <= 2000).slice(0, 40);
+  // Pick skins across the full catalog — up to 80 spread across all rarities
+  const crossVenueSkins = allSkins.filter(([, , , , p]) => p >= 10 && p <= 2000).slice(0, 80);
 
   for (const [name, , , , basePrice] of crossVenueSkins) {
     const skinId = uid("skin", name);
@@ -665,20 +901,28 @@ async function seedPriceSnapshots(session: ReturnType<typeof driver.session>) {
 // ─── main ──────────────────────────────────────────────────────────────────────
 
 async function seedDatabase() {
-  const imageMap = await fetchSkinImages();
+  const { catalog, imageMap } = await fetchFullCatalog();
+
+  // Merge hardcoded skins (with precise prices) + dynamic catalog (filtered base skins)
+  const dynamicSkins = buildDynamicSkins(catalog);
+  const allSkins: typeof SKINS = [...SKINS, ...dynamicSkins];
+  console.log(`  → ${SKINS.length} hardcoded + ${dynamicSkins.length} from ByMykel = ${allSkins.length} total skins`);
+
   const session = driver.session();
   try {
     console.log("\n🌱 Seeding Neo4j database...\n");
     await clearDatabase(session);
     await createConstraints(session);
-    await seedWeaponsAndCollections(session);
+    await seedWeaponsAndCollections(session, allSkins);
     await seedMarketplaces(session);
     await seedTraders(session);
-    await seedSkins(session, imageMap);
-    await seedInstancesAndTransactions(session);
-    await seedPriceSnapshots(session);
+    await seedSkins(session, allSkins, imageMap);
+    await seedInstancesAndTransactions(session, allSkins);
+    const stickerImages = await fetchStickerImages();
+    await seedStickers(session, stickerImages);
+    await seedPriceSnapshots(session, allSkins);
     console.log("\n✅ Database seeding complete!");
-    console.log(`   Skins: ${SKINS.length} · Traders: ${ALL_TRADERS.length} · Marketplaces: ${MARKETPLACES.length}`);
+    console.log(`   Skins: ${allSkins.length} · Traders: ${ALL_TRADERS.length} · Marketplaces: ${MARKETPLACES.length}`);
   } catch (error) {
     console.error("❌ Seeding error:", error);
     throw error;

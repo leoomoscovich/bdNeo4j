@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { mapInstanceJourney, mapSkinDetail, mapTraderReputation } from "@/lib/graph-mappers";
 import { runQuery } from "@/lib/neo4j";
-import { instanceJourneyQuery, skinDetailQuery, traderReputationQuery } from "@/lib/queries";
+import { instanceJourneyQuery, skinDetailQuery, stickerDetailQuery, traderReputationQuery } from "@/lib/queries";
+import { getListings, normalizeWear, toMarketHashName } from "@/lib/csfloat";
+import type { SkinDetailResponse, VenuePrice } from "@/lib/types";
 
 export async function GET(
   request: Request,
@@ -16,7 +18,25 @@ export async function GET(
     const skinDetailData = mapSkinDetail(detailResult.records);
 
     if (!skinDetailData) {
-      return NextResponse.json({ error: "Skin no encontrada" }, { status: 404 });
+      // Try as a Sticker node
+      const stickerResult = await runQuery(stickerDetailQuery, { skinId: id });
+      const rec = stickerResult.records[0];
+      if (!rec) return NextResponse.json({ error: "Skin no encontrada" }, { status: 404 });
+
+      const str = (k: string) => rec.get(k) as string ?? "";
+      const price = (() => { const v = rec.get("valueUsd"); return v?.toNumber?.() ?? Number(v) ?? 0; })();
+      const stickerData: SkinDetailResponse = {
+        skin: {
+          id: str("id"), name: str("name"),
+          weapon: "Sticker", collection: str("tournament"),
+          rarity: str("rarity"), imageUrl: str("imageUrl"),
+          instances: [],
+          venuePrices: price > 0 ? [{ marketplace: "Mercado histórico", wear: "N/A", priceUsd: price, quantity: null, observedAt: "" }] : [],
+        },
+        journey: [],
+        currentSeller: null,
+      };
+      return NextResponse.json(stickerData);
     }
 
     // Resolve instance to show journey for
@@ -32,6 +52,23 @@ export async function GET(
         const repResult = await runQuery(traderReputationQuery, { traderId: lastStep.seller.id });
         skinDetailData.currentSeller = mapTraderReputation(repResult.records);
       }
+    }
+
+    // Enrich venuePrices with live CsFloat listings (best-effort, non-blocking)
+    const liveListings = await getListings(toMarketHashName(skinDetailData.skin.name));
+    if (liveListings.length > 0) {
+      const livePrices: VenuePrice[] = liveListings.map((l) => ({
+        marketplace: "CSFloat (live)",
+        wear: normalizeWear(l.wear_name),
+        priceUsd: Math.round(l.price) / 100,
+        quantity: null,
+        observedAt: l.created_at,
+      }));
+      // Merge: live listings go first so the UI shows them at the top
+      skinDetailData.skin.venuePrices = [
+        ...livePrices,
+        ...skinDetailData.skin.venuePrices.filter((v) => v.marketplace !== "CSFloat (live)"),
+      ];
     }
 
     return NextResponse.json(skinDetailData);
