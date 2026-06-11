@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AppShell } from "@/components/AppShell";
 import { CompareWorkspace } from "@/components/CompareWorkspace";
+import { GlobalGraphExplorer } from "@/components/GlobalGraphExplorer";
 import { GraphInsightPanel } from "@/components/GraphInsightPanel";
 import { MarketPulseCards } from "@/components/MarketPulseCards";
 import { OpportunityFeed } from "@/components/OpportunityFeed";
@@ -234,15 +235,7 @@ export default function DashboardPage() {
       )}
 
       {activeWorkspace === "graph-explorer" && (
-        <section className="panel graph-panel" style={{ marginTop: 16 }}>
-          <div className="panel-header">
-            <div>
-              <h2>Graph Explorer</h2>
-              <p>{graphTarget ? graphTarget.label : "Select an opportunity, trader, market or risk cycle to render a graph."}</p>
-            </div>
-          </div>
-          <GraphInsightPanel graphTarget={graphTarget} selectedOpportunity={selectedOpportunity} selectedRiskCycle={selectedRiskCycle} />
-        </section>
+        <GlobalGraphExplorer />
       )}
 
       {activeWorkspace === "traders" && (
