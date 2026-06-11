@@ -46,7 +46,8 @@ function MetricCard({ label, value, accent = "soft", detail, icon }: MetricCardP
         <span className="pulse-label">{label}</span>
         <span className="pulse-icon">{icon}</span>
       </div>
-      <strong>{value}</strong>
+      {/* key=value remounts the element on every change, re-triggering the CSS animation */}
+      <strong key={value} className="pulse-value-live">{value}</strong>
       <span>{detail}</span>
       <div className="metric-visual" aria-hidden="true">
         <i />
@@ -70,25 +71,30 @@ function SkeletonCard() {
   );
 }
 
+async function fetchPulse(): Promise<MarketPulse> {
+  const res = await fetch("/api/market-pulse");
+  if (!res.ok) throw new Error("market-pulse");
+  const data: Partial<MarketPulse> = await res.json();
+  return { ...fallbackPulse, ...data };
+}
+
 export function MarketPulseCards() {
   const [pulse, setPulse] = useState<MarketPulse>(fallbackPulse);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/market-pulse")
-      .then((response) => {
-        if (!response.ok) throw new Error("market-pulse");
-        return response.json();
-      })
-      .then((data: Partial<MarketPulse>) => {
-        setPulse({ ...fallbackPulse, ...data });
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("No se pudo obtener el pulso de mercado. Verifica que Neo4j este corriendo.");
-        setLoading(false);
-      });
+    /* Initial load */
+    fetchPulse()
+      .then((data) => { setPulse(data); setLoading(false); })
+      .catch(() => { setError("No se pudo obtener el pulso de mercado. Verificá que Neo4j esté corriendo."); setLoading(false); });
+
+    /* Live polling every 10 s */
+    const interval = setInterval(() => {
+      fetchPulse().then(setPulse).catch(() => {/* keep last known values on error */});
+    }, 10_000);
+
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
