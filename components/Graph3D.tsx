@@ -86,6 +86,20 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
   const pulseMeshes = useRef<THREE.Mesh[]>([]);
+  /* Track every Three.js resource created via nodeThreeObject so we can dispose
+     them when the graph changes or the component unmounts — prevents GPU memory leak
+     after repeated open/close cycles of drawers or graph switches. */
+  const disposablesRef = useRef<Array<{ dispose(): void }>>([]);
+
+  useEffect(() => {
+    return () => {
+      for (const d of disposablesRef.current) {
+        try { d.dispose(); } catch { /* already disposed by three.js internally */ }
+      }
+      disposablesRef.current = [];
+      pulseMeshes.current = [];
+    };
+  }, [graph]);
   const [width, setWidth] = useState(800);
 
   useEffect(() => {
@@ -177,6 +191,7 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
       transparent: true,
       opacity: node.type === "transaction" ? 0.55 : 0.95,
     });
+    disposablesRef.current.push(geo, mat);
 
     const mesh = new THREE.Mesh(geo, mat);
     if (risky) pulseMeshes.current.push(mesh);
@@ -184,6 +199,9 @@ export function Graph3D({ graph, height = 420, riskMode = false, onNodeClick }: 
     if (LABELED_TYPES.has(node.type) && node.label) {
       const label = makeLabelSprite(node.label, risky ? "#EE2E2E" : `#${color.toString(16).padStart(6, "0")}`);
       label.position.set(0, r + 7, 0);
+      const spriteMat = label.material as THREE.SpriteMaterial;
+      if (spriteMat.map) disposablesRef.current.push(spriteMat.map);
+      disposablesRef.current.push(spriteMat);
       mesh.add(label);
     }
 

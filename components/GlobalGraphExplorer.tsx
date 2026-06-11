@@ -34,9 +34,10 @@ export function GlobalGraphExplorer() {
     fetch("/api/traders")
       .then((r) => r.ok ? r.json() : [])
       .then((traders: Array<{ id: string; handle: string }>) => {
-        if (!traders[0]) { setLoading(false); return; }
-        setActiveLabel(traders[0].handle);
-        return fetch(`/api/graph?traderId=${encodeURIComponent(traders[0].id)}`);
+        if (traders.length === 0) { setLoading(false); return; }
+        const pick = traders[Math.floor(Math.random() * Math.min(traders.length, 10))];
+        setActiveLabel(pick.handle);
+        return fetch(`/api/graph?traderId=${encodeURIComponent(pick.id)}`);
       })
       .then((r) => r?.ok ? r.json() : EMPTY_GRAPH)
       .then((g: GraphResponse) => { setGraph(g); setLoading(false); })
