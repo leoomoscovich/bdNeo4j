@@ -75,7 +75,12 @@ export function SkinInspect3D({ imageUrl, alt }: Props) {
       }, 16);
     };
     img.onerror = () => { /* silent fail — plate shows empty background */ };
-    img.src = imageUrl;
+    /* Route through Next.js image proxy to avoid WebGL cross-origin texture rejection.
+       Steam CDN doesn't send CORS headers, so loading directly with crossOrigin="anonymous"
+       causes gl.texImage2D to throw SECURITY_ERR. /_next/image serves from same origin. */
+    img.src = imageUrl.startsWith("http")
+      ? `/_next/image?url=${encodeURIComponent(imageUrl)}&w=640&q=90`
+      : imageUrl;
 
     /* ── Mouse interaction ── */
     let targetRotX = 0, targetRotY = 0;

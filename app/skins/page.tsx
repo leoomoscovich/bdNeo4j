@@ -88,7 +88,7 @@ function useJitteredPrice(base: number | null, id: string): number | null {
 
 function SkinGridCard({ skin, priority = false }: { skin: SkinCatalogItem; priority?: boolean }) {
   const c = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
-  const basePrice = skin.latestPrice ?? RARITY_DEFAULT_PRICE[skin.rarity] ?? null;
+  const basePrice = skin.latestPrice || RARITY_DEFAULT_PRICE[skin.rarity] || null;
   const jittered = useJitteredPrice(basePrice, skin.id);
   const price = fmtPrice(jittered);
 
@@ -154,7 +154,7 @@ function SkinGridCard({ skin, priority = false }: { skin: SkinCatalogItem; prior
 
 function SkinListRow({ skin }: { skin: SkinCatalogItem }) {
   const c = RARITY_VAR[skin.rarity] ?? "var(--hair-2)";
-  const basePrice = skin.latestPrice ?? RARITY_DEFAULT_PRICE[skin.rarity] ?? null;
+  const basePrice = skin.latestPrice || RARITY_DEFAULT_PRICE[skin.rarity] || null;
   const jittered = useJitteredPrice(basePrice, skin.id);
   const price = fmtPrice(jittered);
 
@@ -526,7 +526,7 @@ export default function SkinsPage() {
                   <span className="catalog-empty__sub">Probá relajar la búsqueda o limpiar las etiquetas activas.</span>
                 </li>
               ) : (
-                sorted.map((skin, index) => <SkinGridCard key={skin.id} skin={skin} priority={index < 8} />)
+                sorted.map((skin, index) => <SkinGridCard key={`${skin.id}-${index}`} skin={skin} priority={index < 8} />)
               )}
             </ol>
           )}
@@ -556,7 +556,7 @@ export default function SkinsPage() {
                       </td>
                     </tr>
                   ) : (
-                    sorted.map((skin) => <SkinListRow key={skin.id} skin={skin} />)
+                    sorted.map((skin, idx) => <SkinListRow key={`${skin.id}-${idx}`} skin={skin} />)
                   )}
                 </tbody>
               </table>
