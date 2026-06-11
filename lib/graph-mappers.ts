@@ -466,17 +466,25 @@ export function mapScan(records: Neo4jRecord[]): ScanSummary | null {
 }
 
 export function mapSkinCatalog(records: Neo4jRecord[]): SkinCatalogItem[] {
-  return records.map((r) => ({
-    id: str(r.get("id")),
-    name: str(r.get("name")),
-    weapon: str(r.get("weapon")),
-    collection: str(r.get("collection") ?? ""),
-    rarity: str(r.get("rarity")),
-    imageUrl: str(r.get("imageUrl") ?? ""),
-    instanceCount: num(r.get("instanceCount")),
-    latestPrice: r.get("latestPrice") != null ? num(r.get("latestPrice")) : null,
-    latestMarketplace: r.get("latestMarketplace") ? str(r.get("latestMarketplace")) : null,
-  }));
+  const seen = new Set<string>();
+  const out: SkinCatalogItem[] = [];
+  for (const r of records) {
+    const id = str(r.get("id"));
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      id,
+      name: str(r.get("name")),
+      weapon: str(r.get("weapon")),
+      collection: str(r.get("collection") ?? ""),
+      rarity: str(r.get("rarity")),
+      imageUrl: str(r.get("imageUrl") ?? ""),
+      instanceCount: num(r.get("instanceCount")),
+      latestPrice: r.get("latestPrice") != null ? num(r.get("latestPrice")) : null,
+      latestMarketplace: r.get("latestMarketplace") ? str(r.get("latestMarketplace")) : null,
+    });
+  }
+  return out;
 }
 
 export function mapSkinDetail(records: Neo4jRecord[]): SkinDetailResponse | null {

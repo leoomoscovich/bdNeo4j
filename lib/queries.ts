@@ -241,14 +241,16 @@ RETURN count(DISTINCT i) AS suspiciousCycles
 
 export const allSkinsQuery = `
 MATCH (s:Skin)-[:FOR_WEAPON]->(w:Weapon)
-OPTIONAL MATCH (s)-[:BELONGS_TO]->(c:Collection)
 WHERE ($query = '' OR toLower(s.name) CONTAINS toLower($query))
   AND ($rarity = '' OR s.rarity = $rarity)
   AND ($weapon = '' OR w.name = $weapon)
+OPTIONAL MATCH (s)-[:BELONGS_TO]->(c:Collection)
 OPTIONAL MATCH (s)<-[:FOR_SKIN]-(p:PriceSnapshot)-[:ON_MARKETPLACE]->(mp:Marketplace)
+WITH s, w, c, collect(DISTINCT {price: p.priceUsd, marketplace: mp.name}) AS rawPrices
 OPTIONAL MATCH (i:SkinInstance)-[:INSTANCE_OF]->(s)
-WITH s, w, c, count(DISTINCT i) AS instanceCount,
-     [x IN collect(DISTINCT {price: p.priceUsd, marketplace: mp.name}) WHERE x.price IS NOT NULL] AS prices
+WITH s, w, c, rawPrices, count(DISTINCT i) AS instanceCount
+WITH s, w, c, instanceCount,
+     [x IN rawPrices WHERE x.price IS NOT NULL] AS prices
 WITH s, w, c, instanceCount, prices,
      reduce(mn = null, x IN prices |
        CASE WHEN mn IS NULL OR x.price < mn.price THEN x ELSE mn END) AS cheapest
