@@ -158,7 +158,7 @@ function TraderDrawer({ traderId, handle, onClose, onOpenGraph }: DrawerProps) {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--d-muted)" }}>
                     {viewMode === "inventory"
-                      ? `Inventario · ${graph.nodes.filter((n) => n.type !== "Trader" || n.id === traderId).length} nodos`
+                      ? `Inventario · ${graph.nodes.filter((n) => n.type !== "trader" || n.id === traderId).length} nodos`
                       : `Red de conexiones · ${graph.nodes.length} nodos`}
                   </div>
                   <div style={{ display: "flex", background: "var(--d-panel-2)", borderRadius: 6, padding: 2, gap: 2 }}>
@@ -191,10 +191,10 @@ function TraderDrawer({ traderId, handle, onClose, onOpenGraph }: DrawerProps) {
                     viewMode === "inventory"
                       ? {
                           ...graph,
-                          nodes: graph.nodes.filter((n) => n.type !== "Trader" || n.id === traderId),
+                          nodes: graph.nodes.filter((n) => n.type !== "trader" || n.id === traderId),
                           edges: graph.edges.filter((e) =>
                             graph.nodes
-                              .filter((n) => n.type !== "Trader" || n.id === traderId)
+                              .filter((n) => n.type !== "trader" || n.id === traderId)
                               .some((n) => n.id === e.source || n.id === e.target)
                           ),
                         }
