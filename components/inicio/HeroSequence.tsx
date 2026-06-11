@@ -4,6 +4,69 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 
 const FRAMES = 192;
 
+type QuestionSpot = {
+  text: string;
+  range: [number, number, number, number];
+  style: React.CSSProperties;
+};
+
+const QUESTIONS: QuestionSpot[] = [
+  {
+    text: '¿Cansado de tener miedo de perder tus skins?',
+    range: [0.04, 0.1, 0.21, 0.27],
+    style: { top: '12%', left: '6%', width: 'min(34vw, 320px)' },
+  },
+  {
+    text: '¿Querés evitar estafas?',
+    range: [0.24, 0.3, 0.41, 0.47],
+    style: { top: '10%', right: '6%', width: 'min(26vw, 260px)' },
+  },
+  {
+    text: '¿Sabés quién tuvo tu skin antes que vos?',
+    range: [0.44, 0.5, 0.61, 0.67],
+    style: { bottom: '14%', left: '5%', width: 'min(32vw, 300px)' },
+  },
+  {
+    text: '¿Confiarías en un trader sin historial?',
+    range: [0.64, 0.7, 0.81, 0.87],
+    style: { bottom: '12%', right: '6%', width: 'min(30vw, 290px)' },
+  },
+];
+
+function QuestionCircle({ progress, spot }: { progress: ReturnType<typeof useScroll>['scrollYProgress']; spot: QuestionSpot }) {
+  const [start, peakIn, peakOut, end] = spot.range;
+  const opacity = useTransform(progress, [start, peakIn, peakOut, end], [0, 1, 1, 0]);
+  const scale = useTransform(progress, [start, peakIn, peakOut, end], [0.82, 1, 1, 0.9]);
+
+  return (
+    <motion.div
+      style={{
+        position: 'absolute',
+        ...spot.style,
+        opacity,
+        scale,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        aspectRatio: '1 / 1',
+        borderRadius: '50%',
+        border: '1px solid rgba(255,255,255,0.32)',
+        background: 'rgba(10,10,12,0.35)',
+        backdropFilter: 'blur(2px)',
+        padding: '10%',
+        fontFamily: 'var(--font-serif, serif)',
+        fontSize: 'clamp(0.85rem, 1.6vw, 1.3rem)',
+        lineHeight: 1.25,
+        color: 'rgba(255,255,255,0.92)',
+        pointerEvents: 'none',
+      }}
+    >
+      {spot.text}
+    </motion.div>
+  );
+}
+
 export default function HeroSequence() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -15,10 +78,8 @@ export default function HeroSequence() {
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', '15% start'] });
   const hintOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
 
-  // Light sweep across the hero headline, tracking scroll over the full sequence
+  // Question circles + closing line, tracking scroll over the full sequence
   const { scrollYProgress: heroProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
-  const lightPosition = useTransform(heroProgress, [0, 1], ['-50% 50%', '200% 50%']);
-  const lightOpacity = useTransform(heroProgress, [0, 0.08, 0.85, 1], [0, 1, 1, 0]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -139,7 +200,12 @@ export default function HeroSequence() {
           style={{ display: 'block', width: '100%', height: '100%' }}
         />
 
-        {/* Headline with scroll-driven light sweep */}
+        {/* Trust questions, appearing one by one in the corners as the scene assembles */}
+        {QUESTIONS.map((spot) => (
+          <QuestionCircle key={spot.text} progress={heroProgress} spot={spot} />
+        ))}
+
+        {/* Closing line, revealed once all parts have come together */}
         <motion.div
           style={{
             position: 'absolute',
@@ -149,11 +215,12 @@ export default function HeroSequence() {
             justifyContent: 'center',
             pointerEvents: 'none',
             padding: '0 24px',
+            opacity: useTransform(heroProgress, [0.84, 0.92, 1], [0, 1, 1]),
+            scale: useTransform(heroProgress, [0.84, 0.94], [0.92, 1]),
           }}
         >
           <h1
             style={{
-              position: 'relative',
               margin: 0,
               fontFamily: 'var(--font-serif, serif)',
               fontWeight: 600,
@@ -161,29 +228,10 @@ export default function HeroSequence() {
               lineHeight: 1.08,
               textAlign: 'center',
               letterSpacing: '-0.01em',
-              color: 'rgba(255,255,255,0.16)',
+              color: 'rgba(255,255,255,0.94)',
             }}
           >
-            <span aria-hidden="true">
-              El precio es solo<br />la <em style={{ fontStyle: 'italic' }}>superficie</em>.
-            </span>
-            <motion.span
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundImage:
-                  'linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.95) 50%, transparent 65%)',
-                backgroundSize: '300% 300%',
-                backgroundPosition: lightPosition,
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                color: 'transparent',
-                opacity: lightOpacity,
-              }}
-            >
-              El precio es solo<br />la <em style={{ fontStyle: 'italic' }}>superficie</em>.
-            </motion.span>
+            El precio es solo<br />la <em style={{ fontStyle: 'italic' }}>superficie</em>.
           </h1>
         </motion.div>
 
