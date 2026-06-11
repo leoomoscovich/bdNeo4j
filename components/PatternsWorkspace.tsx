@@ -80,7 +80,7 @@ export function PatternsWorkspace({ onOpenGraph }: PatternsWorkspaceProps) {
   const isEmpty = data && data.crossVenue.length === 0 && data.crowdedSkins.length === 0 && data.floatPremium.length === 0;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start", marginTop: 16 }}>
+    <div className="patterns-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start", marginTop: 16 }}>
 
       {/* P1 — Spreads cross-venue */}
       <section className="table-panel" style={{ gridColumn: "1 / -1" }}>

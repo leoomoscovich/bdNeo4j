@@ -571,6 +571,32 @@
 .opp-spread { width: 9%; text-align: right; }
 .opp-confidence { width: 13%; }
 
+/* ── Mobile supplement (≤ 640px) ────────────────────────────── */
+@media (max-width: 640px) {
+  /* Status band */
+  .engine-strip { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .engine-actions { grid-column: 1 / -1; }
+
+  /* Panels and sections */
+  .panel-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .table-panel { border-radius: 0; margin-left: -14px; margin-right: -14px; }
+
+  /* Pulse cards: single column */
+  .pulse-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .pulse-card { padding: 12px; }
+  .pulse-card > strong, .pulse-value-live { font-size: 22px !important; }
+
+  /* Patterns grid: single column */
+  .patterns-grid { grid-template-columns: 1fr !important; }
+
+  /* Table column hiding: keep only essential columns */
+  .opp-table th:nth-child(n+5),
+  .opp-table td:nth-child(n+5) { display: none; }
+
+  /* Ops status band wraps to 2 cols */
+  .ops-status-band { padding: 6px 0; }
+}
+
 /* ── Skeleton loader para el feed de oportunidades ──────── */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
