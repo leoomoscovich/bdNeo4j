@@ -15,6 +15,11 @@ export default function HeroSequence() {
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', '15% start'] });
   const hintOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
 
+  // Light sweep across the hero headline, tracking scroll over the full sequence
+  const { scrollYProgress: heroProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
+  const lightPosition = useTransform(heroProgress, [0, 1], ['-50% 50%', '200% 50%']);
+  const lightOpacity = useTransform(heroProgress, [0, 0.08, 0.85, 1], [0, 1, 1, 0]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -133,6 +138,54 @@ export default function HeroSequence() {
           ref={canvasRef}
           style={{ display: 'block', width: '100%', height: '100%' }}
         />
+
+        {/* Headline with scroll-driven light sweep */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            padding: '0 24px',
+          }}
+        >
+          <h1
+            style={{
+              position: 'relative',
+              margin: 0,
+              fontFamily: 'var(--font-serif, serif)',
+              fontWeight: 600,
+              fontSize: 'clamp(2.4rem, 7vw, 6rem)',
+              lineHeight: 1.08,
+              textAlign: 'center',
+              letterSpacing: '-0.01em',
+              color: 'rgba(255,255,255,0.16)',
+            }}
+          >
+            <span aria-hidden="true">
+              El precio es solo<br />la <em style={{ fontStyle: 'italic' }}>superficie</em>.
+            </span>
+            <motion.span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage:
+                  'linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.95) 50%, transparent 65%)',
+                backgroundSize: '300% 300%',
+                backgroundPosition: lightPosition,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                color: 'transparent',
+                opacity: lightOpacity,
+              }}
+            >
+              El precio es solo<br />la <em style={{ fontStyle: 'italic' }}>superficie</em>.
+            </motion.span>
+          </h1>
+        </motion.div>
 
         {/* Top nav */}
         <nav className="topnav" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
